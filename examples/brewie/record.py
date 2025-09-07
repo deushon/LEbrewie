@@ -12,9 +12,9 @@ from lerobot.utils.visualization_utils import _init_rerun
 
 # Recording parameters
 NUM_EPISODES = 3
-FPS = 30
-EPISODE_TIME_SEC = 30
-RESET_TIME_SEC = 10
+FPS = 20
+EPISODE_TIME_SEC = 10
+RESET_TIME_SEC = 5
 TASK_DESCRIPTION = "Brewie robot manipulation task"
 
 # Create the robot configuration
@@ -26,12 +26,9 @@ robot_config = BrewieConfig(
     cameras={},  # Add camera configs here if needed
 )
 
-# Create teleoperator configuration
-keyboard_config = KeyboardTeleopConfig()
 
 # Initialize robot and teleoperator
 robot = BrewieBase(robot_config)
-keyboard = KeyboardTeleop(keyboard_config)
 
 # Configure the dataset features
 action_features = hw_to_dataset_features(robot.action_features, "action")
@@ -50,17 +47,14 @@ dataset = LeRobotDataset.create(
 
 # Connect to robot and teleoperator
 robot.connect()
-keyboard.connect()
 
 # _init_rerun(session_name="brewie_record")  # Disabled - Rerun viewer not required
 
 listener, events = init_keyboard_listener()
 
-if not robot.is_connected or not keyboard.is_connected:
-    raise ValueError("Robot or keyboard is not connected!")
 
 recorded_episodes = 0
-while recorded_episodes < NUM_EPISODES and not events["stop_recording"]:
+while recorded_episodes < NUM_EPISODES:
     print(f"Recording episode {recorded_episodes}")
 
     # Run the record loop
@@ -104,5 +98,4 @@ while recorded_episodes < NUM_EPISODES and not events["stop_recording"]:
 dataset.push_to_hub()
 
 robot.disconnect()
-keyboard.disconnect()
 listener.stop()
