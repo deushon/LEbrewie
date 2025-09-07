@@ -7,7 +7,7 @@ from lerobot.robots.brewie.config_Brewie import BrewieConfig
 from lerobot.robots.brewie.Brewie_base import BrewieBase
 from lerobot.teleoperators.keyboard import KeyboardTeleop, KeyboardTeleopConfig
 from lerobot.utils.control_utils import init_keyboard_listener
-from lerobot.utils.utils import log_say
+from lerobot.utils.utils import print
 from lerobot.utils.visualization_utils import _init_rerun
 
 # Recording parameters
@@ -61,7 +61,7 @@ if not robot.is_connected or not keyboard.is_connected:
 
 recorded_episodes = 0
 while recorded_episodes < NUM_EPISODES and not events["stop_recording"]:
-    log_say(f"Recording episode {recorded_episodes}")
+    print(f"Recording episode {recorded_episodes}")
 
     # Run the record loop
     record_loop(
@@ -79,7 +79,7 @@ while recorded_episodes < NUM_EPISODES and not events["stop_recording"]:
     if not events["stop_recording"] and (
         (recorded_episodes < NUM_EPISODES - 1) or events["rerecord_episode"]
     ):
-        log_say("Reset the environment")
+        print("Reset the environment")
         record_loop(
             robot=robot,
             events=events,
@@ -91,7 +91,7 @@ while recorded_episodes < NUM_EPISODES and not events["stop_recording"]:
         )
 
     if events["rerecord_episode"]:
-        log_say("Re-record episode")
+        print("Re-record episode")
         events["rerecord_episode"] = False
         events["exit_early"] = False
         dataset.clear_episode_buffer()
