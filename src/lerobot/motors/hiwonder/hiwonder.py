@@ -171,4 +171,36 @@ class HiwonderMotorsBus(MotorsBus):
             return float(raw) / 10.0
         return float(raw)
 
+    # Required abstract methods from MotorsBus
+    def _decode_sign(self, data_name: str, ids_values: list[tuple[int, int]]) -> list[tuple[int, int]]:
+        """Decode sign for Hiwonder motors - not applicable for this implementation."""
+        return ids_values
+
+    def _encode_sign(self, data_name: str, ids_values: list[tuple[int, int]]) -> list[tuple[int, int]]:
+        """Encode sign for Hiwonder motors - not applicable for this implementation."""
+        return ids_values
+
+    def _get_half_turn_homings(self, positions: dict[str, int]) -> dict[str, int]:
+        """Get half turn homing positions for calibration."""
+        # For Hiwonder, assume center position is 500 (middle of 0-1000 range)
+        return {motor: 500 for motor in positions.keys()}
+
+    def _split_into_byte_chunks(self, value: int, length: int) -> list[int]:
+        """Split value into byte chunks - not used in Hiwonder implementation."""
+        return [value & 0xFF, (value >> 8) & 0xFF][:length]
+
+    def broadcast_ping(self, num_retry: int = 0, raise_on_error: bool = True) -> dict[str, tuple[int, int]]:
+        """Broadcast ping to find motors - simplified for Hiwonder."""
+        result = {}
+        for motor_name, motor in self.motors.items():
+            try:
+                # Try to read position to verify motor exists
+                data = self.board.bus_servo_read_position(motor.id)
+                if data is not None:
+                    result[motor_name] = (motor.id, self.available_baudrates[0])
+            except Exception:
+                if raise_on_error:
+                    raise
+        return result
+
 
