@@ -32,6 +32,13 @@ class HiwonderMotorsBus(MotorsBus):
         "hx": {
             "Present_Position": {"address": 0, "length": 2},
             "Goal_Position": {"address": 0, "length": 2},
+            "Operating_Mode": {"address": 0, "length": 1},
+            "P_Coefficient": {"address": 0, "length": 1},
+            "I_Coefficient": {"address": 0, "length": 1},
+            "D_Coefficient": {"address": 0, "length": 1},
+            "Max_Torque_Limit": {"address": 0, "length": 2},
+            "Protection_Current": {"address": 0, "length": 2},
+            "Overload_Torque": {"address": 0, "length": 1},
         }
     }
     # Raw is pulses 0..1000
@@ -68,8 +75,15 @@ class HiwonderMotorsBus(MotorsBus):
         return md.id, self.available_baudrates[0]
 
     def configure_motors(self) -> None:
-        # No-op for now
-        return
+        # Configure motors with Hiwonder-specific settings
+        if not self.board:
+            return
+        for motor_name, motor in self.motors.items():
+            # Enable torque for all motors
+            self.board.bus_servo_enable_torque(motor.id, 1)
+            # Set basic parameters if needed
+            # Note: Hiwonder servos may not support all these parameters
+            # This is a simplified configuration
 
     def disable_torque(self, motors: int | str | list[str] | None = None, num_retry: int = 0) -> None:
         if not self.board:
@@ -137,14 +151,27 @@ class HiwonderMotorsBus(MotorsBus):
         return result
 
     def sync_write(self, data_name: str, motors_values: dict[str, Any], normalize: bool = True) -> None:
-        assert data_name in ("Goal_Position",), f"Unsupported write: {data_name}"
-        # Hiwonder groups positions as [[id, pulse], ...] with duration in seconds
-        positions = []
-        for motor_name, value in motors_values.items():
-            raw = self._encode("Goal_Position", self.motors[motor_name], value) if normalize else int(value)
-            positions.append([self.motors[motor_name].id, int(raw)])
-        # Use a small duration for smoothness
-        self.board.bus_servo_set_position(0.05, positions)
+        if data_name == "Goal_Position":
+            # Hiwonder groups positions as [[id, pulse], ...] with duration in seconds
+            positions = []
+            for motor_name, value in motors_values.items():
+                raw = self._encode("Goal_Position", self.motors[motor_name], value) if normalize else int(value)
+                positions.append([self.motors[motor_name].id, int(raw)])
+            # Use a small duration for smoothness
+            self.board.bus_servo_set_position(0.05, positions)
+        else:
+            # For other fields (Operating_Mode, P_Coefficient, etc.), we don't support them in Hiwonder
+            # Just log a warning and continue
+            print(f"Warning: {data_name} not supported for Hiwonder servos, skipping...")
+
+    def write(self, data_name: str, motor: str, value: Any, normalize: bool = True) -> None:
+        """Write a single value to a single motor."""
+        self.sync_write(data_name, {motor: value}, normalize)
+
+    def read(self, data_name: str, motor: str, normalize: bool = True) -> Any:
+        """Read a single value from a single motor."""
+        result = self.sync_read(data_name, [motor], normalize)
+        return result[motor] if motor in result else None
 
     # Encoding/decoding: map normalized degrees or [-100,100] to pulses [0,1000]
     def _encode(self, data_name: str, motor: Motor, value: float) -> int:

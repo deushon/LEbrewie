@@ -40,7 +40,7 @@ dataset_features = {**action_features, **obs_features}
 
 # Create the dataset
 dataset = LeRobotDataset.create(
-    repo_id="<hf_username>/<brewie_dataset>",  # Replace with your HuggingFace username and dataset name
+    repo_id="forroot/brew_testx",  # Replace with your HuggingFace username and dataset name
     fps=FPS,
     features=dataset_features,
     robot_type=robot.name,
