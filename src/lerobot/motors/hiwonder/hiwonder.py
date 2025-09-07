@@ -9,7 +9,7 @@ from copy import deepcopy
 from typing import Any
 
 from ..motors_bus import MotorsBus
-from ..types import Motor, MotorCalibration
+from ..motors_bus import Motor, MotorCalibration
 
 
 class HiwonderMotorsBus(MotorsBus):
