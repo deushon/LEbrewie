@@ -69,7 +69,7 @@ while recorded_episodes < NUM_EPISODES and not events["stop_recording"]:
         events=events,
         fps=FPS,
         dataset=dataset,
-        teleop=[keyboard],
+        teleop= None,
         control_time_s=EPISODE_TIME_SEC,
         single_task=TASK_DESCRIPTION,
         display_data=False,  # Disabled to avoid Rerun dependency
@@ -84,7 +84,7 @@ while recorded_episodes < NUM_EPISODES and not events["stop_recording"]:
             robot=robot,
             events=events,
             fps=FPS,
-            teleop=[keyboard],
+            teleop= None,
             control_time_s=RESET_TIME_SEC,
             single_task=TASK_DESCRIPTION,
             display_data=False,  # Disabled to avoid Rerun dependency
