@@ -21,12 +21,22 @@ from lerobot.cameras import CameraConfig
 from ..config import RobotConfig
 
 
-@RobotConfig.register_subclass("BrewieConfig")
+@RobotConfig.register_subclass("brewie")
 @dataclass
 class BrewieConfig(RobotConfig):
-    
-    #NEW
-    ipadress: str
+    # Port to connect to the arm
     port: str
-    # cameras Will use?
+
+    # Optional network/ip fields if needed by external tools
+    ipadress: str | None = None
+
+    disable_torque_on_disconnect: bool = True
+
+    # Safety limit on relative joint targets
+    max_relative_target: int | None = None
+
+    # cameras
     cameras: dict[str, CameraConfig] = field(default_factory=dict)
+
+    # Set to True for backward compatibility with previous datasets/policies
+    use_degrees: bool = False

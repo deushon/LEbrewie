@@ -22,10 +22,8 @@ from typing import Any
 from lerobot.cameras.utils import make_cameras_from_configs
 from lerobot.errors import DeviceAlreadyConnectedError, DeviceNotConnectedError
 from lerobot.motors import Motor, MotorCalibration, MotorNormMode
-from lerobot.motors.feetech import (
-    FeetechMotorsBus,
-    OperatingMode,
-)
+from lerobot.motors.feetech import OperatingMode
+from lerobot.motors.hiwonder.hiwonder import HiwonderMotorsBus
 
 from ..robot import Robot
 from ..utils import ensure_safe_goal_position
@@ -43,18 +41,22 @@ class BrewieBase(Robot):
         super().__init__(config)
         self.config = config
         
-        port=self.config.port
-        ipadress =self.config.ipadress
-        
         norm_mode_body = MotorNormMode.DEGREES if config.use_degrees else MotorNormMode.RANGE_M100_100
-        self.bus = FeetechMotorsBus(
+        self.bus = HiwonderMotorsBus(
+            port=self.config.port,
             motors={
-                "shoulder_pan": Motor(1, "sts3215", norm_mode_body),
-                "shoulder_lift": Motor(2, "sts3215", norm_mode_body),
-                "elbow_flex": Motor(3, "sts3215", norm_mode_body),
-                "wrist_flex": Motor(4, "sts3215", norm_mode_body),
-                "wrist_roll": Motor(5, "sts3215", norm_mode_body),
-                "gripper": Motor(6, "sts3215", MotorNormMode.RANGE_0_100),
+                # Mapping based on provided IDs (Left/Right, shoulder/elbow/wrist/grippers)
+                # Adjust names to your observation/action expectations
+                "left_shoulder_pan": Motor(13, "hx", norm_mode_body),
+                "right_shoulder_pan": Motor(14, "hx", norm_mode_body),
+                "left_shoulder_lift": Motor(15, "hx", norm_mode_body),
+                "right_shoulder_lift": Motor(16, "hx", norm_mode_body),
+                "left_forearm_roll": Motor(17, "hx", norm_mode_body),
+                "right_forearm_roll": Motor(18, "hx", norm_mode_body),
+                "left_forearm_pitch": Motor(19, "hx", norm_mode_body),
+                "right_forearm_pitch": Motor(20, "hx", norm_mode_body),
+                "left_gripper": Motor(21, "hx", MotorNormMode.RANGE_0_100),
+                "right_gripper": Motor(22, "hx", MotorNormMode.RANGE_0_100),
             },
             calibration=self.calibration,
         )
