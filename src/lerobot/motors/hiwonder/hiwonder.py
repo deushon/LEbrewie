@@ -74,7 +74,7 @@ class HiwonderMotorsBus(MotorsBus):
     def disable_torque(self, motors: int | str | list[str] | None = None, num_retry: int = 0) -> None:
         if not self.board:
             return
-        for motor_name in self._iter_target_motors(motors):
+        for motor_name in self._get_motors_list(motors):
             self._disable_torque(self.motors[motor_name].id, self.motors[motor_name].model, num_retry)
 
     def _disable_torque(self, motor: int, model: str, num_retry: int = 0) -> None:
@@ -84,7 +84,7 @@ class HiwonderMotorsBus(MotorsBus):
     def enable_torque(self, motors: str | list[str] | None = None, num_retry: int = 0) -> None:
         if not self.board:
             return
-        for motor_name in self._iter_target_motors(motors):
+        for motor_name in self._get_motors_list(motors):
             self.board.bus_servo_enable_torque(self.motors[motor_name].id, 1)
 
     # Connection management
