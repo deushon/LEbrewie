@@ -33,8 +33,16 @@ def simple_record_loop(robot, dataset, control_time_s, fps, events):
         # Create action (empty for passive recording)
         action = {key: 0.0 for key in robot.action_features.keys()}
         
+        # Structure the frame correctly
+        frame = {
+            "observation": {
+                "state": obs  # All motor positions and camera data
+            },
+            "action": action  # All motor actions
+        }
+        
         # Add to dataset
-        dataset.add_frame(obs, action, timestamp)
+        dataset.add_frame(frame, timestamp)
         
         # Wait for next frame
         elapsed = time.perf_counter() - start_loop_t
