@@ -2,13 +2,14 @@
 
 from lerobot.datasets.lerobot_dataset import LeRobotDataset
 from lerobot.datasets.utils import hw_to_dataset_features
-from lerobot.record import record_loop
+# from lerobot.record import record_loop  # Replaced with custom recording loop
 from lerobot.robots.brewie.config_Brewie import BrewieConfig
 from lerobot.robots.brewie.Brewie_base import BrewieBase
 # from lerobot.teleoperators.keyboard import KeyboardTeleop, KeyboardTeleopConfig  # Removed - no teleop needed
 from lerobot.utils.control_utils import init_keyboard_listener
 # from lerobot.utils.utils import log_say  # Removed - using print instead
 from lerobot.utils.visualization_utils import _init_rerun
+import time
 
 # Recording parameters
 NUM_EPISODES = 3
@@ -16,6 +17,36 @@ FPS = 30
 EPISODE_TIME_SEC = 30
 RESET_TIME_SEC = 10
 TASK_DESCRIPTION = "Brewie robot manipulation task"
+
+def simple_record_loop(robot, dataset, control_time_s, fps, events):
+    """Simple recording loop without teleoperators."""
+    timestamp = 0
+    start_episode_t = time.perf_counter()
+    frame_interval = 1.0 / fps
+    
+    while timestamp < control_time_s and not events["stop_recording"]:
+        start_loop_t = time.perf_counter()
+        
+        # Get observation from robot
+        obs = robot.get_observation()
+        
+        # Create action (empty for passive recording)
+        action = {key: 0.0 for key in robot.action_features.keys()}
+        
+        # Add to dataset
+        dataset.add_frame(obs, action, timestamp)
+        
+        # Wait for next frame
+        elapsed = time.perf_counter() - start_loop_t
+        sleep_time = max(0, frame_interval - elapsed)
+        if sleep_time > 0:
+            time.sleep(sleep_time)
+        
+        timestamp = time.perf_counter() - start_episode_t
+        
+        # Print progress every 5 seconds
+        if int(timestamp) % 5 == 0 and timestamp > 0:
+            print(f"Recording... {timestamp:.1f}s / {control_time_s}s")
 
 # Create the robot configuration
 robot_config = BrewieConfig(
@@ -58,16 +89,13 @@ recorded_episodes = 0
 while recorded_episodes < NUM_EPISODES and not events["stop_recording"]:
     print(f"Recording episode {recorded_episodes}")
 
-    # Run the record loop
-    record_loop(
+    # Run the simple record loop
+    simple_record_loop(
         robot=robot,
-        events=events,
-        fps=FPS,
         dataset=dataset,
-        teleop=[],  # No teleoperator - external control
         control_time_s=EPISODE_TIME_SEC,
-        single_task=TASK_DESCRIPTION,
-        display_data=False,  # Disabled to avoid Rerun dependency
+        fps=FPS,
+        events=events
     )
 
     # Logic for reset env
@@ -75,14 +103,12 @@ while recorded_episodes < NUM_EPISODES and not events["stop_recording"]:
         (recorded_episodes < NUM_EPISODES - 1) or events["rerecord_episode"]
     ):
         print("Reset the environment")
-        record_loop(
+        simple_record_loop(
             robot=robot,
-            events=events,
-            fps=FPS,
-            teleop=[],  # No teleoperator - external control
+            dataset=dataset,
             control_time_s=RESET_TIME_SEC,
-            single_task=TASK_DESCRIPTION,
-            display_data=False,  # Disabled to avoid Rerun dependency
+            fps=FPS,
+            events=events
         )
 
     if events["rerecord_episode"]:
