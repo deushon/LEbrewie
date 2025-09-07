@@ -5,7 +5,7 @@ from lerobot.datasets.utils import hw_to_dataset_features
 from lerobot.record import record_loop
 from lerobot.robots.brewie.config_Brewie import BrewieConfig
 from lerobot.robots.brewie.Brewie_base import BrewieBase
-from lerobot.teleoperators.keyboard import KeyboardTeleop, KeyboardTeleopConfig
+# from lerobot.teleoperators.keyboard import KeyboardTeleop, KeyboardTeleopConfig  # Removed - no teleop needed
 from lerobot.utils.control_utils import init_keyboard_listener
 # from lerobot.utils.utils import log_say  # Removed - using print instead
 from lerobot.utils.visualization_utils import _init_rerun
@@ -26,12 +26,8 @@ robot_config = BrewieConfig(
     cameras={},  # Add camera configs here if needed
 )
 
-# Create teleoperator configuration
-keyboard_config = KeyboardTeleopConfig()
-
-# Initialize robot and teleoperator
+# Initialize robot only (no teleoperator needed)
 robot = BrewieBase(robot_config)
-keyboard = KeyboardTeleop(keyboard_config)
 
 # Configure the dataset features
 action_features = hw_to_dataset_features(robot.action_features, "action")
@@ -48,16 +44,15 @@ dataset = LeRobotDataset.create(
     image_writer_threads=4,
 )
 
-# Connect to robot and teleoperator
+# Connect to robot only
 robot.connect()
-keyboard.connect()
 
 # _init_rerun(session_name="brewie_record")  # Disabled - Rerun viewer not required
 
 listener, events = init_keyboard_listener()
 
-if not robot.is_connected or not keyboard.is_connected:
-    raise ValueError("Robot or keyboard is not connected!")
+if not robot.is_connected:
+    raise ValueError("Robot is not connected!")
 
 recorded_episodes = 0
 while recorded_episodes < NUM_EPISODES and not events["stop_recording"]:
@@ -69,7 +64,7 @@ while recorded_episodes < NUM_EPISODES and not events["stop_recording"]:
         events=events,
         fps=FPS,
         dataset=dataset,
-        teleop=[keyboard],
+        teleop=[],  # No teleoperator - external control
         control_time_s=EPISODE_TIME_SEC,
         single_task=TASK_DESCRIPTION,
         display_data=False,  # Disabled to avoid Rerun dependency
@@ -84,7 +79,7 @@ while recorded_episodes < NUM_EPISODES and not events["stop_recording"]:
             robot=robot,
             events=events,
             fps=FPS,
-            teleop=[keyboard],
+            teleop=[],  # No teleoperator - external control
             control_time_s=RESET_TIME_SEC,
             single_task=TASK_DESCRIPTION,
             display_data=False,  # Disabled to avoid Rerun dependency
@@ -104,5 +99,4 @@ while recorded_episodes < NUM_EPISODES and not events["stop_recording"]:
 dataset.push_to_hub()
 
 robot.disconnect()
-keyboard.disconnect()
 listener.stop()
