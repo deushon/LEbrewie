@@ -7,7 +7,7 @@ from lerobot.robots.brewie.config_Brewie import BrewieConfig
 from lerobot.robots.brewie.Brewie_base import BrewieBase
 from lerobot.teleoperators.keyboard import KeyboardTeleop, KeyboardTeleopConfig
 from lerobot.utils.control_utils import init_keyboard_listener
-from lerobot.utils.utils import print
+# from lerobot.utils.utils import log_say  # Removed - using print instead
 from lerobot.utils.visualization_utils import _init_rerun
 
 # Recording parameters
