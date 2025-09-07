@@ -161,8 +161,8 @@ class HiwonderMotorsBus(MotorsBus):
             self.board.bus_servo_set_position(0.05, positions)
         else:
             # For other fields (Operating_Mode, P_Coefficient, etc.), we don't support them in Hiwonder
-            # Just log a warning and continue
-            print(f"Warning: {data_name} not supported for Hiwonder servos, skipping...")
+            # Silently skip these fields to avoid spam
+            pass
 
     def write(self, data_name: str, motor: str, value: Any, normalize: bool = True) -> None:
         """Write a single value to a single motor."""

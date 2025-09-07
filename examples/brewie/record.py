@@ -52,7 +52,7 @@ dataset = LeRobotDataset.create(
 robot.connect()
 keyboard.connect()
 
-_init_rerun(session_name="brewie_record")
+# _init_rerun(session_name="brewie_record")  # Disabled - Rerun viewer not required
 
 listener, events = init_keyboard_listener()
 
@@ -72,7 +72,7 @@ while recorded_episodes < NUM_EPISODES and not events["stop_recording"]:
         teleop=[keyboard],
         control_time_s=EPISODE_TIME_SEC,
         single_task=TASK_DESCRIPTION,
-        display_data=True,
+        display_data=False,  # Disabled to avoid Rerun dependency
     )
 
     # Logic for reset env
@@ -87,7 +87,7 @@ while recorded_episodes < NUM_EPISODES and not events["stop_recording"]:
             teleop=[keyboard],
             control_time_s=RESET_TIME_SEC,
             single_task=TASK_DESCRIPTION,
-            display_data=True,
+            display_data=False,  # Disabled to avoid Rerun dependency
         )
 
     if events["rerecord_episode"]:
