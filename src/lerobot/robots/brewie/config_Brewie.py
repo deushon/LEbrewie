@@ -26,13 +26,13 @@ from ..config import RobotConfig
 class BrewieConfig(RobotConfig):
     
     # ROS connection parameters
-    master_ip: str = "localhost"
+    master_ip: str = "192.168.20.21"
     master_port: int = 9090
     
     # Servo configuration
     servo_ids: list[int] = field(default_factory=lambda: [13, 14, 15, 16, 17, 18, 19, 20, 21, 22])
     servo_duration: float = 0.1  # Duration for servo movements
-    
+     
     # Servo mapping (ID -> joint name)
     servo_mapping: dict[int, str] = field(default_factory=lambda: {
         13: "left_shoulder_pan",

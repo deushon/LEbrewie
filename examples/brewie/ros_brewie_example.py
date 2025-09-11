@@ -65,6 +65,11 @@ def main():
         
     except Exception as e:
         logger.error(f"Error during test: {e}")
+        logger.error("Possible causes:")
+        logger.error("1. ROS master is not running at the specified IP/port")
+        logger.error("2. ROS service '/ros_robot_controller/bus_servo/get_position' is not available")
+        logger.error("3. Robot controller is not running")
+        logger.error("4. Network connectivity issues")
         
     finally:
         # Disconnect
