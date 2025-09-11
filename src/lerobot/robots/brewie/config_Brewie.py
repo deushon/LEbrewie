@@ -25,8 +25,36 @@ from ..config import RobotConfig
 @dataclass
 class BrewieConfig(RobotConfig):
     
-    #NEW
-    ipadress: str
-    port: str
+    # ROS connection parameters
+    master_ip: str = "localhost"
+    master_port: int = 9090
+    
+    # Servo configuration
+    servo_ids: list[int] = field(default_factory=lambda: [13, 14, 15, 16, 17, 18, 19, 20, 21, 22])
+    servo_duration: float = 0.1  # Duration for servo movements
+    
+    # Servo mapping (ID -> joint name)
+    servo_mapping: dict[int, str] = field(default_factory=lambda: {
+        13: "left_shoulder_pan",
+        14: "right_shoulder_pan", 
+        15: "left_shoulder_lift",
+        16: "right_shoulder_lift",
+        17: "left_forearm_roll",
+        18: "right_forearm_roll",
+        19: "left_forearm_pitch",
+        20: "right_forearm_pitch",
+        21: "left_gripper",
+        22: "right_gripper"
+    })
+    
+    # ROS topics and services
+    position_service: str = "/ros_robot_controller/bus_servo/get_position"
+    set_position_topic: str = "/ros_robot_controller/bus_servo/set_position"
+    camera_topic: str = "/camera/image_raw/compressed"
+    
+    # Safety parameters
+    max_relative_target: float | None = None  # Maximum relative movement per step
+    disable_torque_on_disconnect: bool = True  # Disable torque when disconnecting
+    
     # cameras Will use?
     cameras: dict[str, CameraConfig] = field(default_factory=dict)

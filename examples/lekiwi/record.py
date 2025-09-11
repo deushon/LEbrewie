@@ -25,7 +25,7 @@ leader_arm = SO100Leader(leader_arm_config)
 keyboard = KeyboardTeleop(keyboard_config)
 
 # Configure the dataset features
-action_features = hw_to_dataset_features(robot.action_features, "action")
+action_features = hw_to_dataset_features(robot.action_features, "action") 
 obs_features = hw_to_dataset_features(robot.observation_features, "observation")
 dataset_features = {**action_features, **obs_features}
 
