@@ -132,9 +132,10 @@ def main():
     # =============================================================================
     
     # Конфигурация признаков датасета
-    action_features = hw_to_dataset_features(robot.action_features, "action") 
+    #action_features = hw_to_dataset_features(robot.action_features, "action") 
     obs_features = hw_to_dataset_features(robot.observation_features, "observation")
-    dataset_features = {**action_features, **obs_features}
+    dataset_features = {**obs_features}
+    #**action_features,
     
     # Создание датасета
     dataset_repo_id = f"{config.hf_username}/{config.dataset_name}"
