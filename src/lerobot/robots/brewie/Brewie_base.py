@@ -17,6 +17,7 @@
 import logging
 import time
 import threading
+import base64
 from functools import cached_property
 from typing import Any
 import numpy as np
@@ -34,6 +35,128 @@ from ..utils import ensure_safe_goal_position
 from .config_Brewie import BrewieConfig
 
 logger = logging.getLogger(__name__)
+
+
+class CameraSubscriber:
+    """
+    Класс для подписки на ROS топик с изображениями и получения последнего снимка.
+    Основан на примере пользователя для надежной обработки изображений.
+    """
+    
+    def __init__(self, ros_client, image_topic):
+        """
+        Инициализация подписчика на изображения.
+        
+        Args:
+            ros_client: ROS клиент для подключения
+            image_topic: ROS топик с изображениями
+        """
+        self.last_image = None
+        self.client = ros_client
+        self.image_topic = image_topic
+        self.image_lock = threading.Lock()
+        self.last_message = None
+        
+    def on_image_received(self, message):
+        """
+        Колбэк, который вызывается при получении нового сообщения.
+        
+        Args:
+            message: ROS сообщение с изображением
+        """
+        try:
+            with self.image_lock:
+                self.last_message = message
+                # Декодируем изображение сразу при получении
+                decoded_image = self._decode_image_from_message(message)
+                if decoded_image is not None:
+                    self.last_image = decoded_image
+                else:
+                    logger.warning("[CameraSubscriber] Failed to decode image from message")
+        except Exception as e:
+            logger.error(f"[CameraSubscriber] Error in on_image_received: {e}")
+    
+    def _decode_image_from_message(self, message):
+        """
+        Декодирует изображение из ROS сообщения.
+        
+        Args:
+            message: ROS сообщение с изображением
+            
+        Returns:
+            np.ndarray или None: Декодированное изображение или None при ошибке
+        """
+        try:
+            if message is None:
+                logger.warning("[CameraSubscriber] Message is None")
+                return None
+                
+            # Получаем данные изображения
+            img_data = message.get('data')
+            if img_data is None:
+                logger.warning("[CameraSubscriber] No 'data' field in message")
+                return None
+            
+            # Обрабатываем разные форматы данных
+            if isinstance(img_data, str):
+                # Если данные в виде строки, пробуем декодировать как Base64
+                try:
+                    image_bytes = base64.b64decode(img_data)
+                except Exception as e:
+                    logger.warning(f"[CameraSubscriber] Failed to decode Base64 string: {e}")
+                    # Если не Base64, пробуем как обычную строку
+                    image_bytes = img_data.encode('latin-1')
+            else:
+                # Если данные уже в виде байтов
+                image_bytes = img_data
+            
+            # Преобразуем массив байтов в NumPy-массив
+            img_np = np.frombuffer(image_bytes, np.uint8)
+            
+            # Декодируем изображение из JPEG/PNG с помощью OpenCV
+            img_cv = cv2.imdecode(img_np, cv2.IMREAD_UNCHANGED)
+            
+            if img_cv is None:
+                logger.warning("[CameraSubscriber] Failed to decode image with OpenCV")
+                return None
+                
+            return img_cv
+            
+        except Exception as e:
+            logger.error(f"[CameraSubscriber] Error decoding image: {e}")
+            return None
+    
+    def get_last_image(self):
+        """
+        Метод, который возвращает последний сохраненный снимок.
+        
+        Returns:
+            np.ndarray или None: Последнее изображение или None если нет данных
+        """
+        with self.image_lock:
+            if self.last_image is None:
+                logger.debug("[CameraSubscriber] No image data received")
+                return None
+            return self.last_image.copy()
+    
+    def get_last_message(self):
+        """
+        Возвращает последнее полученное сообщение.
+        
+        Returns:
+            dict или None: Последнее ROS сообщение или None
+        """
+        with self.image_lock:
+            return self.last_message
+    
+    def subscribe(self):
+        """Подписывается на топик с изображениями."""
+        try:
+            self.image_topic.subscribe(self.on_image_received)
+            logger.info("[CameraSubscriber] Successfully subscribed to image topic")
+        except Exception as e:
+            logger.error(f"[CameraSubscriber] Failed to subscribe to image topic: {e}")
+            raise
 
 
 class BrewieBase(Robot):
@@ -54,6 +177,7 @@ class BrewieBase(Robot):
         # Camera data
         self.latest_image = None
         self.image_lock = threading.Lock()
+        self.camera_subscriber = None
         
         # Servo positions cache
         self.current_positions = {}
@@ -147,25 +271,10 @@ class BrewieBase(Robot):
                 self.config.camera_topic,
                 'sensor_msgs/CompressedImage'
             )
-            self.camera_topic.subscribe(self._camera_callback)
+            # Создаем CameraSubscriber для надежной обработки изображений
+            self.camera_subscriber = CameraSubscriber(self.ros_client, self.camera_topic)
+            self.camera_subscriber.subscribe()
 
-    def _camera_callback(self, message):
-        """Callback for ROS camera topic."""
-        try:
-            # Decode compressed image
-            img_data = message['data']
-            # Handle both string and bytes data
-            if isinstance(img_data, str):
-                # Convert string to bytes if needed
-                img_data = img_data.encode('latin-1')
-            nparr = np.frombuffer(img_data, np.uint8)
-            img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
-            
-            if img is not None:
-                with self.image_lock:
-                    self.latest_image = img
-        except Exception as e:
-            logger.error(f"Error processing camera image: {e}")
 
     @property
     def is_calibrated(self) -> bool:
@@ -240,13 +349,23 @@ class BrewieBase(Robot):
                 dt_ms = (time.perf_counter() - start) * 1e3
                 logger.debug(f"{self} read {cam_key}: {dt_ms:.1f}ms")
         else:
-            # Use ROS camera
-            with self.image_lock:
-                if self.latest_image is not None:
-                    obs_dict["camera"] = self.latest_image.copy()
-                else:
+            # Use ROS camera with improved CameraSubscriber
+            start = time.perf_counter()
+            if self.camera_subscriber is not None:
+                received_img = self.camera_subscriber.get_last_image()
+                if received_img is None:
+                    logger.warning("[Image] No data received from subscriber")
                     # Return empty image if no data available
                     obs_dict["camera"] = np.zeros((480, 640, 3), dtype=np.uint8)
+                else:
+                    obs_dict["camera"] = received_img
+                    logger.debug(f"[Image] Successfully received image with shape: {received_img.shape}")
+            else:
+                logger.warning("[Image] Camera subscriber not initialized")
+                obs_dict["camera"] = np.zeros((480, 640, 3), dtype=np.uint8)
+            
+            dt_ms = (time.perf_counter() - start) * 1e3
+            logger.debug(f"{self} read camera: {dt_ms:.1f}ms")
 
         return obs_dict
 
@@ -299,6 +418,45 @@ class BrewieBase(Robot):
 
         return {f"{joint}.pos": val for joint, val in goal_pos.items()}
 
+    def test_camera_connection(self) -> dict[str, Any]:
+        """
+        Тестирует подключение к камере и возвращает информацию о состоянии.
+        
+        Returns:
+            dict: Информация о состоянии камеры
+        """
+        result = {
+            "camera_available": False,
+            "last_image_shape": None,
+            "last_message_received": False,
+            "error_message": None
+        }
+        
+        try:
+            if self.camera_subscriber is not None:
+                # Проверяем последнее сообщение
+                last_msg = self.camera_subscriber.get_last_message()
+                result["last_message_received"] = last_msg is not None
+                
+                # Проверяем последнее изображение
+                last_img = self.camera_subscriber.get_last_image()
+                if last_img is not None:
+                    result["camera_available"] = True
+                    result["last_image_shape"] = last_img.shape
+                    logger.info(f"[CameraTest] Camera working, image shape: {last_img.shape}")
+                else:
+                    result["error_message"] = "No image data received"
+                    logger.warning("[CameraTest] No image data available")
+            else:
+                result["error_message"] = "Camera subscriber not initialized"
+                logger.warning("[CameraTest] Camera subscriber not initialized")
+                
+        except Exception as e:
+            result["error_message"] = str(e)
+            logger.error(f"[CameraTest] Error testing camera: {e}")
+            
+        return result
+
     def disconnect(self):
         if not self.is_connected:
             raise DeviceNotConnectedError(f"{self} is not connected.")
@@ -313,3 +471,4 @@ class BrewieBase(Robot):
             self.ros_client = None
 
         logger.info(f"{self} disconnected from ROS.")
+

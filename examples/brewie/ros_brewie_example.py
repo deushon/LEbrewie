@@ -7,6 +7,7 @@ This script demonstrates how to connect to the robot via ROS and perform basic o
 
 import time
 import logging
+import numpy as np
 from lerobot.robots.brewie import BrewieBase, BrewieConfig
 
 # Setup logging
@@ -54,6 +55,20 @@ def main():
         logger.info("Getting observation after movement...")
         obs_after = robot.get_observation()
         logger.info(f"Positions after movement: {obs_after}")
+        
+        # Test improved camera functionality
+        logger.info("Testing improved camera functionality...")
+        camera_test_result = robot.test_camera_connection()
+        logger.info(f"Camera test result: {camera_test_result}")
+        
+        if camera_test_result["camera_available"]:
+            logger.info("✓ Camera is working properly with improved processing")
+            if "camera" in obs_after:
+                camera_data = obs_after["camera"]
+                if isinstance(camera_data, np.ndarray):
+                    logger.info(f"✓ Camera data shape: {camera_data.shape}")
+        else:
+            logger.warning("⚠ Camera is not available or not working properly")
         
         # Example: Return to initial positions
         logger.info("Returning to initial positions...")
