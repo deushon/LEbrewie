@@ -242,6 +242,9 @@ class BrewieBase(Robot):
         self._setup_ros_services()
         self._setup_ros_topics()
         
+        # Initialize default positions for all servos
+        self._initialize_default_positions()
+        
         # Connect cameras if configured
         for cam in self.cameras.values():
             cam.connect()
@@ -274,6 +277,18 @@ class BrewieBase(Robot):
             # Создаем CameraSubscriber для надежной обработки изображений
             self.camera_subscriber = CameraSubscriber(self.ros_client, self.camera_topic)
             self.camera_subscriber.subscribe()
+
+    def _initialize_default_positions(self):
+        """Initialize default positions for all servos."""
+        with self.position_lock:
+            for servo_id in self.config.servo_ids:
+                joint_name = self.config.servo_mapping.get(servo_id)
+                if joint_name:
+                    joint_key = f"{joint_name}.pos"
+                    if joint_key not in self.current_positions:
+                        # Use middle position as default (500 out of 0-1000 range)
+                        self.current_positions[joint_key] = 500.0
+                        logger.debug(f"Initialized default position for {joint_name}: 500.0")
 
 
     @property
@@ -314,9 +329,11 @@ class BrewieBase(Robot):
         try:
             request = ServiceRequest({'id': self.config.servo_ids})
             result = self.position_service.call(request)
-            print(result)
             if result.get('success', False):
                 positions = result.get('position', [])
+                received_servo_ids = set()
+                
+                # Process received positions
                 for pos_data in positions:
                     servo_id = pos_data['id']
                     position = pos_data['position']
@@ -325,11 +342,31 @@ class BrewieBase(Robot):
                         # Ensure position is float32 and within valid range (0-1000)
                         position = float(max(0.0, min(1000.0, float(position))))
                         obs_dict[f"{joint_name}.pos"] = position
-                        
+                        received_servo_ids.add(servo_id)
+                
+                # Fill missing servo positions with previous values
                 with self.position_lock:
+                    for servo_id in self.config.servo_ids:
+                        if servo_id not in received_servo_ids:
+                            joint_name = self.config.servo_mapping.get(servo_id)
+                            if joint_name:
+                                joint_key = f"{joint_name}.pos"
+                                if joint_key in self.current_positions:
+                                    obs_dict[joint_key] = self.current_positions[joint_key]
+                                    logger.debug(f"Using previous position for missing servo {servo_id} ({joint_name}): {self.current_positions[joint_key]}")
+                                else:
+                                    # If no previous value available, use default position (middle of range)
+                                    default_position = 500.0  # Middle of 0-1000 range
+                                    obs_dict[joint_key] = default_position
+                                    logger.warning(f"No previous position for servo {servo_id} ({joint_name}), using default: {default_position}")
+                    
+                    # Update current positions cache
                     self.current_positions = obs_dict.copy()
             else:
                 logger.warning("Failed to get servo positions from ROS service")
+                # Use cached positions if available
+                with self.position_lock:
+                    obs_dict = self.current_positions.copy()
                 
         except Exception as e:
             logger.error(f"Error reading servo positions: {e}")
