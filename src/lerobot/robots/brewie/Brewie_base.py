@@ -68,7 +68,7 @@ class BrewieBase(Robot):
     @property
     def _motors_ft(self) -> dict[str, type]:
         # Return features for all joints defined in servo_mapping
-        return {f"{joint}.pos": float for joint in self.config.servo_mapping.values()}
+        return {f"{joint}.pos": int for joint in self.config.servo_mapping.values()}
 
     @property
     def _cameras_ft(self) -> dict[str, tuple]:
@@ -213,6 +213,8 @@ class BrewieBase(Robot):
                     position = pos_data['position']
                     joint_name = self.config.servo_mapping.get(servo_id)
                     if joint_name:
+                        # Ensure position is integer and within valid range (0-1000)
+                        position = max(0, min(1000, int(position)))
                         obs_dict[f"{joint_name}.pos"] = position
                         
                 with self.position_lock:

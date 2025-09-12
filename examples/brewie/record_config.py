@@ -79,7 +79,7 @@ class RecordingConfig:
     # =============================================================================
     
     # Показывать данные во время записи
-    display_data: bool = True
+    display_data: bool = True 
     
     # Название сессии для визуализации
     session_name: str = "brewie_record"
