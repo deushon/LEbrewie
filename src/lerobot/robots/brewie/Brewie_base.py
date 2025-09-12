@@ -314,7 +314,7 @@ class BrewieBase(Robot):
         try:
             request = ServiceRequest({'id': self.config.servo_ids})
             result = self.position_service.call(request)
-            
+            print(result)
             if result.get('success', False):
                 positions = result.get('position', [])
                 for pos_data in positions:
