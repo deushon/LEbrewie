@@ -30,7 +30,7 @@ class BrewieConfig(RobotConfig):
     master_port: int = 9090
     
     # Servo configuration
-    servo_ids: list[int] = field(default_factory=lambda: [13, 14, 15, 16, 17, 18, 19, 20, 21, 22])
+    servo_ids: list[int] = field(default_factory=lambda: [13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24])
     servo_duration: float = 0.1  # Duration for servo movements
      
     # Servo mapping (ID -> joint name)
@@ -44,13 +44,19 @@ class BrewieConfig(RobotConfig):
         19: "left_forearm_pitch",
         20: "right_forearm_pitch",
         21: "left_gripper",
-        22: "right_gripper"
+        22: "right_gripper",
+        23: "head_pan",      # поворот головы
+        24: "head_tilt"      # наклон головы
     })
     
     # ROS topics and services
     position_service: str = "/ros_robot_controller/bus_servo/get_position"
     set_position_topic: str = "/ros_robot_controller/bus_servo/set_position"
     camera_topic: str = "/camera/image_raw/compressed"
+    
+    # Additional sensor topics
+    joy_topic: str = "/joy"  # Joystick data
+    imu_topic: str = "/imu"  # IMU data (gyroscope, accelerometer)
     
     # Safety parameters
     max_relative_target: float | None = None  # Maximum relative movement per step

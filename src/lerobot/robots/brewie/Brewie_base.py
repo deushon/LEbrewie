@@ -37,6 +37,238 @@ from .config_Brewie import BrewieConfig
 logger = logging.getLogger(__name__)
 
 
+class JoystickSubscriber:
+    """
+    Класс для подписки на ROS топик /joy и получения данных джойстика.
+    """
+    
+    def __init__(self, ros_client, joy_topic):
+        """
+        Инициализация подписчика на джойстик.
+        
+        Args:
+            ros_client: ROS клиент для подключения
+            joy_topic: ROS топик с данными джойстика
+        """
+        self.last_joy_data = None
+        self.client = ros_client
+        self.joy_topic = joy_topic
+        self.joy_lock = threading.Lock()
+        self.last_message = None
+        
+    def on_joy_received(self, message):
+        """
+        Колбэк, который вызывается при получении нового сообщения джойстика.
+        
+        Args:
+            message: ROS сообщение с данными джойстика
+        """
+        try:
+            with self.joy_lock:
+                self.last_message = message
+                # Извлекаем данные джойстика
+                joy_data = self._extract_joy_data(message)
+                if joy_data is not None:
+                    self.last_joy_data = joy_data
+                else:
+                    logger.warning("[JoystickSubscriber] Failed to extract joystick data from message")
+        except Exception as e:
+            logger.error(f"[JoystickSubscriber] Error in on_joy_received: {e}")
+    
+    def _extract_joy_data(self, message):
+        """
+        Извлекает данные джойстика из ROS сообщения.
+        
+        Args:
+            message: ROS сообщение с данными джойстика
+            
+        Returns:
+            dict или None: Данные джойстика или None при ошибке
+        """
+        try:
+            if message is None:
+                logger.warning("[JoystickSubscriber] Message is None")
+                return None
+                
+            # Извлекаем оси и кнопки
+            axes = message.get('axes', [])
+            buttons = message.get('buttons', [])
+            
+            if not axes and not buttons:
+                logger.warning("[JoystickSubscriber] No axes or buttons data in message")
+                return None
+            
+            # Создаем структурированные данные
+            joy_data = {
+                'axes': axes,
+                'buttons': buttons,
+                'timestamp': time.time()
+            }
+            
+            return joy_data
+            
+        except Exception as e:
+            logger.error(f"[JoystickSubscriber] Error extracting joystick data: {e}")
+            return None
+    
+    def get_last_joy_data(self):
+        """
+        Метод, который возвращает последние данные джойстика.
+        
+        Returns:
+            dict или None: Последние данные джойстика или None если нет данных
+        """
+        with self.joy_lock:
+            if self.last_joy_data is None:
+                logger.debug("[JoystickSubscriber] No joystick data received")
+                return None
+            return self.last_joy_data.copy()
+    
+    def get_last_message(self):
+        """
+        Возвращает последнее полученное сообщение.
+        
+        Returns:
+            dict или None: Последнее ROS сообщение или None
+        """
+        with self.joy_lock:
+            return self.last_message
+    
+    def subscribe(self):
+        """Подписывается на топик с данными джойстика."""
+        try:
+            self.joy_topic.subscribe(self.on_joy_received)
+            logger.info("[JoystickSubscriber] Successfully subscribed to joystick topic")
+        except Exception as e:
+            logger.error(f"[JoystickSubscriber] Failed to subscribe to joystick topic: {e}")
+            raise
+
+
+class IMUSubscriber:
+    """
+    Класс для подписки на ROS топик /imu и получения данных IMU.
+    """
+    
+    def __init__(self, ros_client, imu_topic):
+        """
+        Инициализация подписчика на IMU.
+        
+        Args:
+            ros_client: ROS клиент для подключения
+            imu_topic: ROS топик с данными IMU
+        """
+        self.last_imu_data = None
+        self.client = ros_client
+        self.imu_topic = imu_topic
+        self.imu_lock = threading.Lock()
+        self.last_message = None
+        
+    def on_imu_received(self, message):
+        """
+        Колбэк, который вызывается при получении нового сообщения IMU.
+        
+        Args:
+            message: ROS сообщение с данными IMU
+        """
+        try:
+            with self.imu_lock:
+                self.last_message = message
+                # Извлекаем данные IMU
+                imu_data = self._extract_imu_data(message)
+                if imu_data is not None:
+                    self.last_imu_data = imu_data
+                else:
+                    logger.warning("[IMUSubscriber] Failed to extract IMU data from message")
+        except Exception as e:
+            logger.error(f"[IMUSubscriber] Error in on_imu_received: {e}")
+    
+    def _extract_imu_data(self, message):
+        """
+        Извлекает данные IMU из ROS сообщения.
+        
+        Args:
+            message: ROS сообщение с данными IMU
+            
+        Returns:
+            dict или None: Данные IMU или None при ошибке
+        """
+        try:
+            if message is None:
+                logger.warning("[IMUSubscriber] Message is None")
+                return None
+                
+            # Извлекаем ориентацию
+            orientation = message.get('orientation', {})
+            orientation_data = {
+                'x': orientation.get('x', 0.0),
+                'y': orientation.get('y', 0.0),
+                'z': orientation.get('z', 0.0),
+                'w': orientation.get('w', 0.0)
+            }
+            
+            # Извлекаем угловую скорость
+            angular_velocity = message.get('angular_velocity', {})
+            angular_velocity_data = {
+                'x': angular_velocity.get('x', 0.0),
+                'y': angular_velocity.get('y', 0.0),
+                'z': angular_velocity.get('z', 0.0)
+            }
+            
+            # Извлекаем линейное ускорение
+            linear_acceleration = message.get('linear_acceleration', {})
+            linear_acceleration_data = {
+                'x': linear_acceleration.get('x', 0.0),
+                'y': linear_acceleration.get('y', 0.0),
+                'z': linear_acceleration.get('z', 0.0)
+            }
+            
+            # Создаем структурированные данные
+            imu_data = {
+                'orientation': orientation_data,
+                'angular_velocity': angular_velocity_data,
+                'linear_acceleration': linear_acceleration_data,
+                'timestamp': time.time()
+            }
+            
+            return imu_data
+            
+        except Exception as e:
+            logger.error(f"[IMUSubscriber] Error extracting IMU data: {e}")
+            return None
+    
+    def get_last_imu_data(self):
+        """
+        Метод, который возвращает последние данные IMU.
+        
+        Returns:
+            dict или None: Последние данные IMU или None если нет данных
+        """
+        with self.imu_lock:
+            if self.last_imu_data is None:
+                logger.debug("[IMUSubscriber] No IMU data received")
+                return None
+            return self.last_imu_data.copy()
+    
+    def get_last_message(self):
+        """
+        Возвращает последнее полученное сообщение.
+        
+        Returns:
+            dict или None: Последнее ROS сообщение или None
+        """
+        with self.imu_lock:
+            return self.last_message
+    
+    def subscribe(self):
+        """Подписывается на топик с данными IMU."""
+        try:
+            self.imu_topic.subscribe(self.on_imu_received)
+            logger.info("[IMUSubscriber] Successfully subscribed to IMU topic")
+        except Exception as e:
+            logger.error(f"[IMUSubscriber] Failed to subscribe to IMU topic: {e}")
+            raise
+
+
 class CameraSubscriber:
     """
     Класс для подписки на ROS топик с изображениями и получения последнего снимка.
@@ -173,11 +405,17 @@ class BrewieBase(Robot):
         self.position_service = None
         self.set_position_topic = None
         self.camera_topic = None
+        self.joy_topic = None
+        self.imu_topic = None
         
         # Camera data
         self.latest_image = None
         self.image_lock = threading.Lock()
         self.camera_subscriber = None
+        
+        # Additional sensor data
+        self.joystick_subscriber = None
+        self.imu_subscriber = None
         
         # Servo positions cache
         self.current_positions = {}
@@ -204,9 +442,38 @@ class BrewieBase(Robot):
             # Default camera dimensions for ROS camera
             return {"camera": (480, 640, 3)}
 
+    @property
+    def _joystick_ft(self) -> dict[str, type]:
+        """Joystick features: individual axes and buttons."""
+        # Создаем отдельные признаки для каждой оси и кнопки
+        features = {}
+        # 8 осей джойстика
+        for i in range(8):
+            features[f"joystick.axis_{i}"] = float
+        # 15 кнопок джойстика (тоже float для совместимости с LeRobot)
+        for i in range(15):
+            features[f"joystick.button_{i}"] = float
+        return features
+
+    @property
+    def _imu_ft(self) -> dict[str, type]:
+        """IMU features: orientation, angular velocity, linear acceleration."""
+        return {
+            "imu.orientation.x": float,
+            "imu.orientation.y": float,
+            "imu.orientation.z": float,
+            "imu.orientation.w": float,
+            "imu.angular_velocity.x": float,
+            "imu.angular_velocity.y": float,
+            "imu.angular_velocity.z": float,
+            "imu.linear_acceleration.x": float,
+            "imu.linear_acceleration.y": float,
+            "imu.linear_acceleration.z": float,
+        }
+
     @cached_property
     def observation_features(self) -> dict[str, type | tuple]:
-        return {**self._motors_ft, **self._cameras_ft}
+        return {**self._motors_ft, **self._cameras_ft, **self._joystick_ft, **self._imu_ft}
 
     @cached_property
     def action_features(self) -> dict[str, type]:
@@ -260,7 +527,7 @@ class BrewieBase(Robot):
         )
 
     def _setup_ros_topics(self):
-        """Setup ROS topics for servo control and camera."""
+        """Setup ROS topics for servo control, camera, joystick and IMU."""
         self.set_position_topic = Topic(
             self.ros_client,
             self.config.set_position_topic,
@@ -277,6 +544,24 @@ class BrewieBase(Robot):
             # Создаем CameraSubscriber для надежной обработки изображений
             self.camera_subscriber = CameraSubscriber(self.ros_client, self.camera_topic)
             self.camera_subscriber.subscribe()
+        
+        # Setup joystick topic
+        self.joy_topic = Topic(
+            self.ros_client,
+            self.config.joy_topic,
+            'sensor_msgs/Joy'
+        )
+        self.joystick_subscriber = JoystickSubscriber(self.ros_client, self.joy_topic)
+        self.joystick_subscriber.subscribe()
+        
+        # Setup IMU topic
+        self.imu_topic = Topic(
+            self.ros_client,
+            self.config.imu_topic,
+            'sensor_msgs/Imu'
+        )
+        self.imu_subscriber = IMUSubscriber(self.ros_client, self.imu_topic)
+        self.imu_subscriber.subscribe()
 
     def _initialize_default_positions(self):
         """Initialize default positions for all servos."""
@@ -323,6 +608,7 @@ class BrewieBase(Robot):
             raise DeviceNotConnectedError(f"{self} is not connected.")
 
         obs_dict = {}
+        total_start = time.perf_counter()
         
         # Read servo positions via ROS service
         start = time.perf_counter()
@@ -403,6 +689,104 @@ class BrewieBase(Robot):
             
             dt_ms = (time.perf_counter() - start) * 1e3
             logger.debug(f"{self} read camera: {dt_ms:.1f}ms")
+
+        # Get joystick data
+        start = time.perf_counter()
+        if self.joystick_subscriber is not None:
+            joy_data = self.joystick_subscriber.get_last_joy_data()
+            if joy_data is not None:
+                # Преобразуем данные джойстика в отдельные признаки
+                axes = joy_data['axes']
+                buttons = joy_data['buttons']
+                
+                # Добавляем данные осей (до 8 осей)
+                for i in range(8):
+                    if i < len(axes):
+                        obs_dict[f"joystick.axis_{i}"] = float(axes[i])
+                    else:
+                        obs_dict[f"joystick.axis_{i}"] = 0.0
+                
+                # Добавляем данные кнопок (до 15 кнопок)
+                for i in range(15):
+                    if i < len(buttons):
+                        obs_dict[f"joystick.button_{i}"] = float(buttons[i])
+                    else:
+                        obs_dict[f"joystick.button_{i}"] = 0.0
+                
+                logger.debug(f"[Joystick] Successfully received data: {len(axes)} axes, {len(buttons)} buttons")
+            else:
+                # Возвращаем нулевые значения если нет данных
+                for i in range(8):
+                    obs_dict[f"joystick.axis_{i}"] = 0.0
+                for i in range(15):
+                    obs_dict[f"joystick.button_{i}"] = 0.0
+                logger.debug("[Joystick] No data received, using default values")
+        else:
+            logger.warning("[Joystick] Joystick subscriber not initialized")
+            for i in range(8):
+                obs_dict[f"joystick.axis_{i}"] = 0.0
+            for i in range(15):
+                obs_dict[f"joystick.button_{i}"] = 0.0
+        
+        dt_ms = (time.perf_counter() - start) * 1e3
+        logger.debug(f"{self} read joystick: {dt_ms:.1f}ms")
+
+        # Get IMU data
+        start = time.perf_counter()
+        if self.imu_subscriber is not None:
+            imu_data = self.imu_subscriber.get_last_imu_data()
+            if imu_data is not None:
+                # Извлекаем данные IMU
+                orientation = imu_data['orientation']
+                angular_velocity = imu_data['angular_velocity']
+                linear_acceleration = imu_data['linear_acceleration']
+                
+                obs_dict["imu.orientation.x"] = float(orientation['x'])
+                obs_dict["imu.orientation.y"] = float(orientation['y'])
+                obs_dict["imu.orientation.z"] = float(orientation['z'])
+                obs_dict["imu.orientation.w"] = float(orientation['w'])
+                
+                obs_dict["imu.angular_velocity.x"] = float(angular_velocity['x'])
+                obs_dict["imu.angular_velocity.y"] = float(angular_velocity['y'])
+                obs_dict["imu.angular_velocity.z"] = float(angular_velocity['z'])
+                
+                obs_dict["imu.linear_acceleration.x"] = float(linear_acceleration['x'])
+                obs_dict["imu.linear_acceleration.y"] = float(linear_acceleration['y'])
+                obs_dict["imu.linear_acceleration.z"] = float(linear_acceleration['z'])
+                
+                logger.debug(f"[IMU] Successfully received data: orientation=({orientation['x']:.3f}, {orientation['y']:.3f}, {orientation['z']:.3f}, {orientation['w']:.3f})")
+            else:
+                # Возвращаем нулевые значения если нет данных
+                obs_dict["imu.orientation.x"] = 0.0
+                obs_dict["imu.orientation.y"] = 0.0
+                obs_dict["imu.orientation.z"] = 0.0
+                obs_dict["imu.orientation.w"] = 0.0
+                obs_dict["imu.angular_velocity.x"] = 0.0
+                obs_dict["imu.angular_velocity.y"] = 0.0
+                obs_dict["imu.angular_velocity.z"] = 0.0
+                obs_dict["imu.linear_acceleration.x"] = 0.0
+                obs_dict["imu.linear_acceleration.y"] = 0.0
+                obs_dict["imu.linear_acceleration.z"] = 0.0
+                logger.debug("[IMU] No data received, using default values")
+        else:
+            logger.warning("[IMU] IMU subscriber not initialized")
+            obs_dict["imu.orientation.x"] = 0.0
+            obs_dict["imu.orientation.y"] = 0.0
+            obs_dict["imu.orientation.z"] = 0.0
+            obs_dict["imu.orientation.w"] = 0.0
+            obs_dict["imu.angular_velocity.x"] = 0.0
+            obs_dict["imu.angular_velocity.y"] = 0.0
+            obs_dict["imu.angular_velocity.z"] = 0.0
+            obs_dict["imu.linear_acceleration.x"] = 0.0
+            obs_dict["imu.linear_acceleration.y"] = 0.0
+            obs_dict["imu.linear_acceleration.z"] = 0.0
+        
+        dt_ms = (time.perf_counter() - start) * 1e3
+        logger.debug(f"{self} read IMU: {dt_ms:.1f}ms")
+
+        # Логируем общее время получения наблюдений
+        total_dt_ms = (time.perf_counter() - total_start) * 1e3
+        logger.info(f"{self} TOTAL observation time: {total_dt_ms:.1f}ms")
 
         return obs_dict
 

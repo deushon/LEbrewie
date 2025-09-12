@@ -110,7 +110,7 @@ class RecordingConfig:
     # hf_token теперь получается динамически из переменных окружения или ввода
     
     # Название датасета (будет создан как username/dataset_name)
-    dataset_name: str = "brewie_demo_001"
+    dataset_name: str = "hit_detection"
     
     # =============================================================================
     # НАСТРОЙКИ ЗАПИСИ
@@ -120,7 +120,9 @@ class RecordingConfig:
     num_episodes: int = 5
     
     # Частота записи (кадров в секунду)
-    fps: int = 30
+    # ВНИМАНИЕ: После добавления новых датчиков рекомендуется снизить FPS
+    # для предотвращения проблем с синхронизацией видео
+    fps: int = 20  # Снижено с 30 до 20 для стабильности
     
     # Длительность каждого эпизода в секундах
     episode_time_sec: int = 30
@@ -199,6 +201,7 @@ class RecordingConfig:
             ros_master_ip="192.168.20.21",
             ros_master_port=9090,
             num_episodes=2,
+            fps=20, 
             episode_time_sec=15,
             reset_time_sec=3,
             task_description="Fast demo of robot movements",
@@ -207,6 +210,40 @@ class RecordingConfig:
             resume_existing_dataset=True
         )
     
+    @classmethod
+    def detection_aim(cls) -> "RecordingConfig":
+        """racking and aiming at an enemy robot for fire. FAST MODE"""
+        return cls(
+            hf_username="forroot",  # ОБЯЗАТЕЛЬНО: замените на ваш username
+            dataset_name ="detection_aim",
+            ros_master_ip="192.168.20.21",
+            ros_master_port=9090,
+            num_episodes=2,
+            fps=20, 
+            episode_time_sec=15,
+            reset_time_sec=3,
+            task_description="Tracking and aiming at an enemy robot for fire",
+            task_category="aim",
+            difficulty_level="beginner",
+            resume_existing_dataset=True
+        )
+    @classmethod
+    def hit_detection(cls) -> "RecordingConfig":
+        return cls(
+            hf_username="forroot",  # ОБЯЗАТЕЛЬНО: замените на ваш username
+            dataset_name ="hit_detection",
+            ros_master_ip="192.168.20.21",
+            ros_master_port=9090,
+            num_episodes=2,
+            fps=20, 
+            episode_time_sec=20,
+            reset_time_sec=3,
+            task_description="Testing observation of hit data FIRE button True = human hit verification",
+            task_category="hit",
+            difficulty_level="beginner",
+            resume_existing_dataset=False
+        )
+
     @classmethod
     def resume_demo(cls) -> "RecordingConfig":
         """Демонстрация продолжения записи в существующий датасет."""
@@ -259,13 +296,33 @@ class RecordingConfig:
             task_category="assembly",
             difficulty_level="advanced"
         )
+    
+    @classmethod
+    def optimized_with_sensors(cls) -> "RecordingConfig":
+        """Оптимизированная конфигурация для работы с новыми датчиками."""
+        return cls(
+            hf_username="forroot",  # ОБЯЗАТЕЛЬНО: замените на ваш username
+            ros_master_ip="192.168.20.21",
+            ros_master_port=9090,
+            num_episodes=5,
+            episode_time_sec=30,
+            reset_time_sec=5,
+            fps=15,  # Сниженная частота для стабильности
+            task_description="Оптимизированная запись с новыми датчиками",
+            task_category="demo",
+            difficulty_level="beginner",
+            resume_existing_dataset=True,
+            image_writer_threads=2,  # Меньше потоков для стабильности
+            use_videos=True
+        )
 
 # =============================================================================
 # ВЫБОР КОНФИГУРАЦИИ
 # =============================================================================
 
 # Выберите одну из предустановленных конфигураций или создайте свою
-config = RecordingConfig.quick_demo()
+#config = RecordingConfig.optimized_with_sensors()  # Рекомендуется для новых датчиков
+config = RecordingConfig.hit_detection()
 # config = RecordingConfig.resume_demo()  # Для продолжения записи в существующий датасет
 # config = RecordingConfig.full_dataset()
 # config = RecordingConfig.pick_place_task()
