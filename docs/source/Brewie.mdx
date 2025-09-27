@@ -1,3 +1,116 @@
-# Brewie
+# Brewie Robot ROS Integration
 
-Robo discr soon.
+## Hardware Overview
+
+The Brewie robot is a humanoid robot based on the Hiwonder-manufactured AiNex model. This modification features:
+
+- **Humanoid Design**: Bipedal walking robot with human-like proportions
+- **Dual Manipulators**: Equipped with two articulated arms for manipulation tasks
+- **Locomotion**: Capable of walking and navigating in its environment
+- **Vision System**: Features a movable camera for visual perception
+- **Control Unit**: Powered by a Raspberry Pi 5 as the main computing platform
+- **Network Connectivity**: Can be controlled via local network connection, eliminating the need for direct physical connections
+
+## Overview
+
+The Brewie robot implementation has been redesigned to use ROS (Robot Operating System) through the `roslibpy` library instead of direct motor control through `lerobot.motors`.
+
+## Main Changes
+
+### 1. Configuration (`config_Brewie.py`)
+
+Added new configuration parameters:
+
+- `master_ip`: IP address of ROS master (default "localhost")
+- `master_port`: Port of ROS master (default 9090)
+- `servo_ids`: List of servo IDs
+- `servo_duration`: Duration for servo movements
+- `servo_mapping`: Mapping between servo IDs and joint names
+- `position_service`: Name of ROS service for getting positions
+- `set_position_topic`: Name of ROS topic for setting positions
+- `camera_topic`: Name of ROS camera topic
+
+### 2. Main Class (`Brewie_base.py`)
+
+#### Removed Dependencies:
+- `lerobot.motors` - direct motor control
+- `FeetechMotorsBus` - motor bus
+
+#### Added Dependencies:
+- `roslibpy` - for ROS communication
+- `numpy`, `cv2` - for image processing
+- `threading` - for thread safety
+
+#### New Methods:
+- `_setup_ros_services()` - setup ROS services
+- `_setup_ros_topics()` - setup ROS topics
+- `_camera_callback()` - camera image processing
+
+#### Modified Methods:
+- `connect()` - connect to ROS instead of motors
+- `get_observation()` - get data through ROS services
+- `send_action()` - send commands through ROS topics
+- `disconnect()` - disconnect from ROS
+
+## ROS Interface
+
+### Services
+
+#### Get Servo Positions
+- **Name:** `/ros_robot_controller/bus_servo/get_position`
+- **Type:** `ros_robot_controller/GetBusServosPosition`
+- **Request:** `{'id': [13, 14, 15, 16, 17, 18, 19, 20, 21, 22]}`
+- **Response:** `{'success': True, 'position': [{'id': 13, 'position': 872}, ...]}`
+
+### Topics
+
+#### Set Servo Positions
+- **Name:** `/ros_robot_controller/bus_servo/set_position`
+- **Type:** `ros_robot_controller/SetBusServosPosition`
+- **Message:** `{'duration': 0.1, 'position': [{'id': 13, 'position': 500}, ...]}`
+
+#### Camera Image
+- **Name:** `/camera/image_raw/compressed`
+- **Type:** `sensor_msgs/CompressedImage`
+
+## Servo Mapping
+
+The following default mapping is used:
+
+| ID | Joint Name |
+|----|------------|
+| 13 | left_shoulder_pan |
+| 14 | right_shoulder_pan |
+| 15 | left_shoulder_lift |
+| 16 | right_shoulder_lift |
+| 17 | left_forearm_roll |
+| 18 | right_forearm_roll |
+| 19 | left_forearm_pitch |
+| 20 | right_forearm_pitch |
+| 21 | left_gripper |
+| 22 | right_gripper |
+
+## Compatibility
+
+The implementation is fully compatible with LeRobot standard:
+- Maintains `Robot` class interface
+- Supports dataset collection
+- Compatible with training policies
+- Preserves observation and action formats
+
+## Usage Examples
+
+See files in `examples/brewie/`:
+- `ros_brewie_example.py` - basic usage example
+- `README.md` - detailed documentation
+
+## Testing
+
+Tests created in `tests/robots/test_brewie_ros.py` to verify:
+- Robot initialization
+- ROS connection
+- Observation retrieval
+- Command sending
+- Disconnection
+
+## Requirements

@@ -45,8 +45,8 @@ class BrewieConfig(RobotConfig):
         20: "right_forearm_pitch",
         21: "left_gripper",
         22: "right_gripper",
-        23: "head_pan",      # поворот головы
-        24: "head_tilt"      # наклон головы
+        23: "head_pan",      # head rotation
+        24: "head_tilt"      # head tilt
     })
     
     # ROS topics and services

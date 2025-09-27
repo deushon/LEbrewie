@@ -39,16 +39,16 @@ logger = logging.getLogger(__name__)
 
 class JoystickSubscriber:
     """
-    Класс для подписки на ROS топик /joy и получения данных джойстика.
+    Class for subscribing to ROS topic /joy and receiving joystick data.
     """
     
     def __init__(self, ros_client, joy_topic):
         """
-        Инициализация подписчика на джойстик.
+        Initialize joystick subscriber.
         
         Args:
-            ros_client: ROS клиент для подключения
-            joy_topic: ROS топик с данными джойстика
+            ros_client: ROS client for connection
+            joy_topic: ROS topic with joystick data
         """
         self.last_joy_data = None
         self.client = ros_client
@@ -58,15 +58,15 @@ class JoystickSubscriber:
         
     def on_joy_received(self, message):
         """
-        Колбэк, который вызывается при получении нового сообщения джойстика.
+        Callback that is called when a new joystick message is received.
         
         Args:
-            message: ROS сообщение с данными джойстика
+            message: ROS message with joystick data
         """
         try:
             with self.joy_lock:
                 self.last_message = message
-                # Извлекаем данные джойстика
+                # Extract joystick data
                 joy_data = self._extract_joy_data(message)
                 if joy_data is not None:
                     self.last_joy_data = joy_data
@@ -77,20 +77,20 @@ class JoystickSubscriber:
     
     def _extract_joy_data(self, message):
         """
-        Извлекает данные джойстика из ROS сообщения.
+        Extract joystick data from ROS message.
         
         Args:
-            message: ROS сообщение с данными джойстика
+            message: ROS message with joystick data
             
         Returns:
-            dict или None: Данные джойстика или None при ошибке
+            dict or None: Joystick data or None on error
         """
         try:
             if message is None:
                 logger.warning("[JoystickSubscriber] Message is None")
                 return None
                 
-            # Извлекаем оси и кнопки
+            # Extract axes and buttons
             axes = message.get('axes', [])
             buttons = message.get('buttons', [])
             
@@ -98,7 +98,7 @@ class JoystickSubscriber:
                 logger.warning("[JoystickSubscriber] No axes or buttons data in message")
                 return None
             
-            # Создаем структурированные данные
+            # Create structured data
             joy_data = {
                 'axes': axes,
                 'buttons': buttons,
@@ -113,10 +113,10 @@ class JoystickSubscriber:
     
     def get_last_joy_data(self):
         """
-        Метод, который возвращает последние данные джойстика.
+        Method that returns the latest joystick data.
         
         Returns:
-            dict или None: Последние данные джойстика или None если нет данных
+            dict or None: Latest joystick data or None if no data available
         """
         with self.joy_lock:
             if self.last_joy_data is None:
@@ -126,16 +126,16 @@ class JoystickSubscriber:
     
     def get_last_message(self):
         """
-        Возвращает последнее полученное сообщение.
+        Returns the last received message.
         
         Returns:
-            dict или None: Последнее ROS сообщение или None
+            dict or None: Last ROS message or None
         """
         with self.joy_lock:
             return self.last_message
     
     def subscribe(self):
-        """Подписывается на топик с данными джойстика."""
+        """Subscribe to joystick data topic."""
         try:
             self.joy_topic.subscribe(self.on_joy_received)
             logger.info("[JoystickSubscriber] Successfully subscribed to joystick topic")
@@ -146,16 +146,16 @@ class JoystickSubscriber:
 
 class IMUSubscriber:
     """
-    Класс для подписки на ROS топик /imu и получения данных IMU.
+    Class for subscribing to ROS topic /imu and receiving IMU data.
     """
     
     def __init__(self, ros_client, imu_topic):
         """
-        Инициализация подписчика на IMU.
+        Initialize IMU subscriber.
         
         Args:
-            ros_client: ROS клиент для подключения
-            imu_topic: ROS топик с данными IMU
+            ros_client: ROS client for connection
+            imu_topic: ROS topic with IMU data
         """
         self.last_imu_data = None
         self.client = ros_client
@@ -165,15 +165,15 @@ class IMUSubscriber:
         
     def on_imu_received(self, message):
         """
-        Колбэк, который вызывается при получении нового сообщения IMU.
+        Callback that is called when a new IMU message is received.
         
         Args:
-            message: ROS сообщение с данными IMU
+            message: ROS message with IMU data
         """
         try:
             with self.imu_lock:
                 self.last_message = message
-                # Извлекаем данные IMU
+                # Extract IMU data
                 imu_data = self._extract_imu_data(message)
                 if imu_data is not None:
                     self.last_imu_data = imu_data
@@ -184,20 +184,20 @@ class IMUSubscriber:
     
     def _extract_imu_data(self, message):
         """
-        Извлекает данные IMU из ROS сообщения.
+        Extract IMU data from ROS message.
         
         Args:
-            message: ROS сообщение с данными IMU
+            message: ROS message with IMU data
             
         Returns:
-            dict или None: Данные IMU или None при ошибке
+            dict or None: IMU data or None on error
         """
         try:
             if message is None:
                 logger.warning("[IMUSubscriber] Message is None")
                 return None
                 
-            # Извлекаем ориентацию
+            # Extract orientation
             orientation = message.get('orientation', {})
             orientation_data = {
                 'x': orientation.get('x', 0.0),
@@ -206,7 +206,7 @@ class IMUSubscriber:
                 'w': orientation.get('w', 0.0)
             }
             
-            # Извлекаем угловую скорость
+            # Extract angular velocity
             angular_velocity = message.get('angular_velocity', {})
             angular_velocity_data = {
                 'x': angular_velocity.get('x', 0.0),
@@ -214,7 +214,7 @@ class IMUSubscriber:
                 'z': angular_velocity.get('z', 0.0)
             }
             
-            # Извлекаем линейное ускорение
+            # Extract linear acceleration
             linear_acceleration = message.get('linear_acceleration', {})
             linear_acceleration_data = {
                 'x': linear_acceleration.get('x', 0.0),
@@ -222,7 +222,7 @@ class IMUSubscriber:
                 'z': linear_acceleration.get('z', 0.0)
             }
             
-            # Создаем структурированные данные
+            # Create structured data
             imu_data = {
                 'orientation': orientation_data,
                 'angular_velocity': angular_velocity_data,
@@ -238,10 +238,10 @@ class IMUSubscriber:
     
     def get_last_imu_data(self):
         """
-        Метод, который возвращает последние данные IMU.
+        Method that returns the latest IMU data.
         
         Returns:
-            dict или None: Последние данные IMU или None если нет данных
+            dict or None: Latest IMU data or None if no data available
         """
         with self.imu_lock:
             if self.last_imu_data is None:
@@ -251,16 +251,16 @@ class IMUSubscriber:
     
     def get_last_message(self):
         """
-        Возвращает последнее полученное сообщение.
+        Returns the last received message.
         
         Returns:
-            dict или None: Последнее ROS сообщение или None
+            dict or None: Last ROS message or None
         """
         with self.imu_lock:
             return self.last_message
     
     def subscribe(self):
-        """Подписывается на топик с данными IMU."""
+        """Subscribe to IMU data topic."""
         try:
             self.imu_topic.subscribe(self.on_imu_received)
             logger.info("[IMUSubscriber] Successfully subscribed to IMU topic")
@@ -271,17 +271,17 @@ class IMUSubscriber:
 
 class CameraSubscriber:
     """
-    Класс для подписки на ROS топик с изображениями и получения последнего снимка.
-    Основан на примере пользователя для надежной обработки изображений.
+    Class for subscribing to ROS topic with images and receiving the latest snapshot.
+    Based on user example for reliable image processing.
     """
     
     def __init__(self, ros_client, image_topic):
         """
-        Инициализация подписчика на изображения.
+        Initialize image subscriber.
         
         Args:
-            ros_client: ROS клиент для подключения
-            image_topic: ROS топик с изображениями
+            ros_client: ROS client for connection
+            image_topic: ROS topic with images
         """
         self.last_image = None
         self.client = ros_client
@@ -291,15 +291,15 @@ class CameraSubscriber:
         
     def on_image_received(self, message):
         """
-        Колбэк, который вызывается при получении нового сообщения.
+        Callback that is called when a new message is received.
         
         Args:
-            message: ROS сообщение с изображением
+            message: ROS message with image
         """
         try:
             with self.image_lock:
                 self.last_message = message
-                # Декодируем изображение сразу при получении
+                # Decode image immediately upon receipt
                 decoded_image = self._decode_image_from_message(message)
                 if decoded_image is not None:
                     self.last_image = decoded_image
@@ -310,42 +310,42 @@ class CameraSubscriber:
     
     def _decode_image_from_message(self, message):
         """
-        Декодирует изображение из ROS сообщения.
+        Decode image from ROS message.
         
         Args:
-            message: ROS сообщение с изображением
+            message: ROS message with image
             
         Returns:
-            np.ndarray или None: Декодированное изображение или None при ошибке
+            np.ndarray or None: Decoded image or None on error
         """
         try:
             if message is None:
                 logger.warning("[CameraSubscriber] Message is None")
                 return None
                 
-            # Получаем данные изображения
+            # Get image data
             img_data = message.get('data')
             if img_data is None:
                 logger.warning("[CameraSubscriber] No 'data' field in message")
                 return None
             
-            # Обрабатываем разные форматы данных
+            # Handle different data formats
             if isinstance(img_data, str):
-                # Если данные в виде строки, пробуем декодировать как Base64
+                # If data is a string, try to decode as Base64
                 try:
                     image_bytes = base64.b64decode(img_data)
                 except Exception as e:
                     logger.warning(f"[CameraSubscriber] Failed to decode Base64 string: {e}")
-                    # Если не Base64, пробуем как обычную строку
+                    # If not Base64, try as regular string
                     image_bytes = img_data.encode('latin-1')
             else:
-                # Если данные уже в виде байтов
+                # If data is already in bytes format
                 image_bytes = img_data
             
-            # Преобразуем массив байтов в NumPy-массив
+            # Convert byte array to NumPy array
             img_np = np.frombuffer(image_bytes, np.uint8)
             
-            # Декодируем изображение из JPEG/PNG с помощью OpenCV
+            # Decode image from JPEG/PNG using OpenCV
             img_cv = cv2.imdecode(img_np, cv2.IMREAD_UNCHANGED)
             
             if img_cv is None:
@@ -360,10 +360,10 @@ class CameraSubscriber:
     
     def get_last_image(self):
         """
-        Метод, который возвращает последний сохраненный снимок.
+        Method that returns the last saved snapshot.
         
         Returns:
-            np.ndarray или None: Последнее изображение или None если нет данных
+            np.ndarray or None: Last image or None if no data available
         """
         with self.image_lock:
             if self.last_image is None:
@@ -373,16 +373,16 @@ class CameraSubscriber:
     
     def get_last_message(self):
         """
-        Возвращает последнее полученное сообщение.
+        Returns the last received message.
         
         Returns:
-            dict или None: Последнее ROS сообщение или None
+            dict or None: Last ROS message or None
         """
         with self.image_lock:
             return self.last_message
     
     def subscribe(self):
-        """Подписывается на топик с изображениями."""
+        """Subscribe to image topic."""
         try:
             self.image_topic.subscribe(self.on_image_received)
             logger.info("[CameraSubscriber] Successfully subscribed to image topic")
@@ -445,12 +445,12 @@ class BrewieBase(Robot):
     @property
     def _joystick_ft(self) -> dict[str, type]:
         """Joystick features: individual axes and buttons."""
-        # Создаем отдельные признаки для каждой оси и кнопки
+        # Create separate features for each axis and button
         features = {}
-        # 8 осей джойстика
+        # 8 joystick axes
         for i in range(8):
             features[f"joystick.axis_{i}"] = float
-        # 15 кнопок джойстика (тоже float для совместимости с LeRobot)
+        # 15 joystick buttons (also float for LeRobot compatibility)
         for i in range(15):
             features[f"joystick.button_{i}"] = float
         return features
@@ -541,7 +541,7 @@ class BrewieBase(Robot):
                 self.config.camera_topic,
                 'sensor_msgs/CompressedImage'
             )
-            # Создаем CameraSubscriber для надежной обработки изображений
+            # Create CameraSubscriber for reliable image processing
             self.camera_subscriber = CameraSubscriber(self.ros_client, self.camera_topic)
             self.camera_subscriber.subscribe()
         
@@ -695,18 +695,18 @@ class BrewieBase(Robot):
         if self.joystick_subscriber is not None:
             joy_data = self.joystick_subscriber.get_last_joy_data()
             if joy_data is not None:
-                # Преобразуем данные джойстика в отдельные признаки
+                # Convert joystick data to separate features
                 axes = joy_data['axes']
                 buttons = joy_data['buttons']
                 
-                # Добавляем данные осей (до 8 осей)
+                # Add axis data (up to 8 axes)
                 for i in range(8):
                     if i < len(axes):
                         obs_dict[f"joystick.axis_{i}"] = float(axes[i])
                     else:
                         obs_dict[f"joystick.axis_{i}"] = 0.0
                 
-                # Добавляем данные кнопок (до 15 кнопок)
+                # Add button data (up to 15 buttons)
                 for i in range(15):
                     if i < len(buttons):
                         obs_dict[f"joystick.button_{i}"] = float(buttons[i])
@@ -715,7 +715,7 @@ class BrewieBase(Robot):
                 
                 logger.debug(f"[Joystick] Successfully received data: {len(axes)} axes, {len(buttons)} buttons")
             else:
-                # Возвращаем нулевые значения если нет данных
+                # Return zero values if no data available
                 for i in range(8):
                     obs_dict[f"joystick.axis_{i}"] = 0.0
                 for i in range(15):
@@ -736,7 +736,7 @@ class BrewieBase(Robot):
         if self.imu_subscriber is not None:
             imu_data = self.imu_subscriber.get_last_imu_data()
             if imu_data is not None:
-                # Извлекаем данные IMU
+                # Extract IMU data
                 orientation = imu_data['orientation']
                 angular_velocity = imu_data['angular_velocity']
                 linear_acceleration = imu_data['linear_acceleration']
@@ -756,7 +756,7 @@ class BrewieBase(Robot):
                 
                 logger.debug(f"[IMU] Successfully received data: orientation=({orientation['x']:.3f}, {orientation['y']:.3f}, {orientation['z']:.3f}, {orientation['w']:.3f})")
             else:
-                # Возвращаем нулевые значения если нет данных
+                # Return zero values if no data available
                 obs_dict["imu.orientation.x"] = 0.0
                 obs_dict["imu.orientation.y"] = 0.0
                 obs_dict["imu.orientation.z"] = 0.0
@@ -784,7 +784,7 @@ class BrewieBase(Robot):
         dt_ms = (time.perf_counter() - start) * 1e3
         logger.debug(f"{self} read IMU: {dt_ms:.1f}ms")
 
-        # Логируем общее время получения наблюдений
+        # Log total observation time
         total_dt_ms = (time.perf_counter() - total_start) * 1e3
         logger.info(f"{self} TOTAL observation time: {total_dt_ms:.1f}ms")
 
@@ -841,10 +841,10 @@ class BrewieBase(Robot):
 
     def test_camera_connection(self) -> dict[str, Any]:
         """
-        Тестирует подключение к камере и возвращает информацию о состоянии.
+        Test camera connection and return status information.
         
         Returns:
-            dict: Информация о состоянии камеры
+            dict: Camera status information
         """
         result = {
             "camera_available": False,
@@ -855,11 +855,11 @@ class BrewieBase(Robot):
         
         try:
             if self.camera_subscriber is not None:
-                # Проверяем последнее сообщение
+                # Check last message
                 last_msg = self.camera_subscriber.get_last_message()
                 result["last_message_received"] = last_msg is not None
                 
-                # Проверяем последнее изображение
+                # Check last image
                 last_img = self.camera_subscriber.get_last_image()
                 if last_img is not None:
                     result["camera_available"] = True

@@ -1,34 +1,34 @@
 #!/usr/bin/env python
 
 """
-Конфигурационный файл для записи датасета Brewie.
+Configuration file for Brewie dataset recording.
 
-Этот файл содержит все настройки для записи датасета.
-Измените значения в этом файле перед запуском record.py
+This file contains all settings for dataset recording.
+Modify values in this file before running record.py
 
-ВАЖНО: hf_token теперь получается из переменной окружения HUGGINGFACE_TOKEN
-или из командной строки. Не храните токены в коде!
+IMPORTANT: hf_token is now obtained from HUGGINGFACE_TOKEN environment variable
+or from command line arguments. Do not store tokens in code!
 
-ПРИМЕРЫ ИСПОЛЬЗОВАНИЯ:
+USAGE EXAMPLES:
 
-1. С переменной окружения (рекомендуется):
+1. With environment variable (recommended):
    export HUGGINGFACE_TOKEN=your_token_here
    python examples/brewie/record_with_config.py
 
-2. С аргументом командной строки:
+2. With command line argument:
    python examples/brewie/record_with_config.py --hf-token your_token_here
 
-3. Интерактивный ввод (токен запросится при запуске):
+3. Interactive input (token will be requested at startup):
    python examples/brewie/record_with_config.py
 
-4. Альтернативная переменная окружения:
+4. Alternative environment variable:
    export HF_TOKEN=your_token_here
    python examples/brewie/record_with_config.py
 
-БЕЗОПАСНОСТЬ:
-- Никогда не коммитьте токены в код
-- Используйте переменные окружения для продакшена
-- Токены вводятся скрыто (не отображаются в терминале)
+SECURITY:
+- Never commit tokens to code
+- Use environment variables for production
+- Tokens are entered hidden (not displayed in terminal)
 """
 
 import os
@@ -39,42 +39,42 @@ from typing import Optional
 
 def get_hf_token() -> str:
     """
-    Получает HuggingFace токен из переменной окружения или запрашивает у пользователя.
+    Get HuggingFace token from environment variable or prompt user.
     
-    Порядок получения токена:
-    1. Переменная окружения HUGGINGFACE_TOKEN
-    2. Переменная окружения HF_TOKEN
-    3. Аргумент командной строки --hf-token
-    4. Интерактивный ввод (скрытый)
+    Token retrieval order:
+    1. HUGGINGFACE_TOKEN environment variable
+    2. HF_TOKEN environment variable
+    3. Command line argument --hf-token
+    4. Interactive input (hidden)
     
     Returns:
-        str: HuggingFace токен
+        str: HuggingFace token
         
     Raises:
-        ValueError: Если токен не найден и пользователь отменил ввод
+        ValueError: If token not found and user cancelled input
     """
     def validate_token(token: str) -> str:
-        """Валидирует формат HuggingFace токена."""
+        """Validate HuggingFace token format."""
         if not token or not token.strip():
-            raise ValueError("Токен не может быть пустым")
+            raise ValueError("Token cannot be empty")
         
         token = token.strip()
         
-        # Базовая валидация формата токена HuggingFace
+        # Basic validation of HuggingFace token format
         if not token.startswith("hf_"):
-            print("Предупреждение: Токен не начинается с 'hf_'. Убедитесь, что это правильный HuggingFace токен.")
+            print("Warning: Token does not start with 'hf_'. Make sure this is a valid HuggingFace token.")
         
         if len(token) < 10:
-            raise ValueError("Токен слишком короткий. Проверьте правильность токена.")
+            raise ValueError("Token is too short. Check token correctness.")
         
         return token
     
-    # 1. Проверяем переменные окружения
+    # 1. Check environment variables
     token = os.getenv("HUGGINGFACE_TOKEN") or os.getenv("HF_TOKEN")
     if token:
         return validate_token(token)
     
-    # 2. Проверяем аргументы командной строки
+    # 2. Check command line arguments
     if "--hf-token" in sys.argv:
         try:
             token_index = sys.argv.index("--hf-token")
@@ -84,120 +84,120 @@ def get_hf_token() -> str:
         except (ValueError, IndexError):
             pass
     
-    # 3. Запрашиваем у пользователя
-    print("HuggingFace токен не найден в переменных окружения.")
-    print("Установите переменную окружения HUGGINGFACE_TOKEN или введите токен:")
+    # 3. Prompt user
+    print("HuggingFace token not found in environment variables.")
+    print("Set HUGGINGFACE_TOKEN environment variable or enter token:")
     print("  export HUGGINGFACE_TOKEN=your_token_here")
     print()
     
     try:
-        token = getpass.getpass("Введите ваш HuggingFace токен (скрытый ввод): ")
+        token = getpass.getpass("Enter your HuggingFace token (hidden input): ")
         return validate_token(token)
     except KeyboardInterrupt:
-        print("\nВвод отменен пользователем")
-        raise ValueError("Токен не предоставлен")
+        print("\nInput cancelled by user")
+        raise ValueError("Token not provided")
 
 @dataclass
 class RecordingConfig:
-    """Конфигурация для записи датасета Brewie."""
+    """Configuration for Brewie dataset recording."""
     
     # =============================================================================
-    # НАСТРОЙКИ HUGGINGFACE
+    # HUGGINGFACE SETTINGS
     # =============================================================================
     
-    # Ваши учетные данные HuggingFace
-    hf_username: str = "your_username"  # Замените на ваш username
-    # hf_token теперь получается динамически из переменных окружения или ввода
+    # Your HuggingFace credentials
+    hf_username: str = "your_username"  # Replace with your username
+    # hf_token is now obtained dynamically from environment variables or input
     
-    # Название датасета (будет создан как username/dataset_name)
+    # Dataset name (will be created as username/dataset_name)
     dataset_name: str = "hit_detection"
     
     # =============================================================================
-    # НАСТРОЙКИ ЗАПИСИ
+    # RECORDING SETTINGS
     # =============================================================================
     
-    # Количество эпизодов для записи
+    # Number of episodes to record
     num_episodes: int = 5
     
-    # Частота записи (кадров в секунду)
-    # ВНИМАНИЕ: После добавления новых датчиков рекомендуется снизить FPS
-    # для предотвращения проблем с синхронизацией видео
-    fps: int = 20  # Снижено с 30 до 20 для стабильности
+    # Recording frequency (frames per second)
+    # WARNING: After adding new sensors, it's recommended to reduce FPS
+    # to prevent video synchronization issues
+    fps: int = 20  # Reduced from 30 to 20 for stability
     
-    # Длительность каждого эпизода в секундах
+    # Duration of each episode in seconds
     episode_time_sec: int = 30
     
-    # Время сброса между эпизодами в секундах
+    # Reset time between episodes in seconds
     reset_time_sec: int = 5
     
     # =============================================================================
-    # ОПИСАНИЕ ЗАДАЧИ
+    # TASK DESCRIPTION
     # =============================================================================
     
-    # Описание задачи, которую будет выполнять робот
-    task_description: str = "Демонстрация манипуляций робота Brewie"
+    # Description of the task the robot will perform
+    task_description: str = "Brewie robot manipulation demonstration"
     
-    # Дополнительные метаданные
+    # Additional metadata
     task_category: str = "manipulation"  # manipulation, pick_place, assembly, etc.
     difficulty_level: str = "beginner"   # beginner, intermediate, advanced
     
     # =============================================================================
-    # НАСТРОЙКИ РОБОТА
+    # ROBOT SETTINGS
     # =============================================================================
     
-    # Параметры подключения к ROS
+    # ROS connection parameters
     ros_master_ip: str = "localhost"
     ros_master_port: int = 9090
     
-    # Настройки безопасности
-    max_relative_target: float = 50.0  # Максимальное относительное движение за шаг
-    servo_duration: float = 0.1        # Время выполнения движения сервоприводов
+    # Safety settings
+    max_relative_target: float = 50.0  # Maximum relative movement per step
+    servo_duration: float = 0.1        # Duration for servo movements
     
     # =============================================================================
-    # НАСТРОЙКИ ДАТАСЕТА
+    # DATASET SETTINGS
     # =============================================================================
     
-    # Использовать видео в датасете
+    # Use video in dataset
     use_videos: bool = True
     
-    # Количество потоков для записи изображений
+    # Number of threads for image recording
     image_writer_threads: int = 4
     
     # =============================================================================
-    # ДОПОЛНИТЕЛЬНЫЕ НАСТРОЙКИ
+    # ADDITIONAL SETTINGS
     # =============================================================================
     
-    # Показывать данные во время записи
+    # Display data during recording
     display_data: bool = True 
     
-    # Название сессии для визуализации
+    # Session name for visualization
     session_name: str = "brewie_record"
     
-    # Автоматически отправлять на Hub после записи
+    # Automatically push to Hub after recording
     auto_push_to_hub: bool = True
     
-    # Продолжить запись в существующий датасет (добавить новые эпизоды)
+    # Continue recording in existing dataset (add new episodes)
     resume_existing_dataset: bool = False
     
     def get_hf_token(self) -> str:
         """
-        Получает HuggingFace токен для этой конфигурации.
+        Get HuggingFace token for this configuration.
         
         Returns:
-            str: HuggingFace токен
+            str: HuggingFace token
         """
         return get_hf_token()
     
     # =============================================================================
-    # ПРЕДУСТАНОВЛЕННЫЕ КОНФИГУРАЦИИ
+    # PREDEFINED CONFIGURATIONS
     # =============================================================================
     
     @classmethod
     def quick_demo(cls) -> "RecordingConfig":
-        """Быстрая демонстрация - 2 коротких эпизода."""
+        """Quick demo - 2 short episodes."""
         return cls(
-            hf_username="forroot",  # ОБЯЗАТЕЛЬНО: замените на ваш username
-            # hf_token получается динамически из переменных окружения
+            hf_username="forroot",  # REQUIRED: replace with your username
+            # hf_token is obtained dynamically from environment variables
             ros_master_ip="192.168.20.21",
             ros_master_port=9090,
             num_episodes=2,
@@ -214,7 +214,7 @@ class RecordingConfig:
     def detection_aim(cls) -> "RecordingConfig":
         """racking and aiming at an enemy robot for fire. FAST MODE"""
         return cls(
-            hf_username="forroot",  # ОБЯЗАТЕЛЬНО: замените на ваш username
+            hf_username="forroot",  # REQUIRED: replace with your username
             dataset_name ="detection_aim",
             ros_master_ip="192.168.20.21",
             ros_master_port=9090,
@@ -230,7 +230,7 @@ class RecordingConfig:
     @classmethod
     def hit_detection(cls) -> "RecordingConfig":
         return cls(
-            hf_username="forroot",  # ОБЯЗАТЕЛЬНО: замените на ваш username
+            hf_username="forroot",  # REQUIRED: replace with your username
             dataset_name ="hit_detection",
             ros_master_ip="192.168.20.21",
             ros_master_port=9090,
@@ -246,10 +246,10 @@ class RecordingConfig:
 
     @classmethod
     def resume_demo(cls) -> "RecordingConfig":
-        """Демонстрация продолжения записи в существующий датасет."""
+        """Demonstration of continuing recording in existing dataset."""
         return cls(
-            hf_username="forroot",  # ОБЯЗАТЕЛЬНО: замените на ваш username
-            # hf_token получается динамически из переменных окружения
+            hf_username="forroot",  # REQUIRED: replace with your username
+            # hf_token is obtained dynamically from environment variables
             ros_master_ip="192.168.20.21",
             ros_master_port=9090,
             num_episodes=3,
@@ -258,85 +258,85 @@ class RecordingConfig:
             task_description="Additional episodes for existing dataset",
             task_category="demo",
             difficulty_level="beginner",
-            resume_existing_dataset=True  # Включить режим продолжения записи
+            resume_existing_dataset=True  # Enable resume recording mode
         )
     
     @classmethod
     def full_dataset(cls) -> "RecordingConfig":
-        """Полный датасет - много эпизодов для обучения."""
+        """Full dataset - many episodes for training."""
         return cls(
             num_episodes=20,
             episode_time_sec=60,
             reset_time_sec=10,
-            task_description="Полный набор демонстраций для обучения",
+            task_description="Full set of demonstrations for training",
             task_category="manipulation",
             difficulty_level="intermediate"
         )
     
     @classmethod
     def pick_place_task(cls) -> "RecordingConfig":
-        """Конфигурация для задачи pick and place."""
+        """Configuration for pick and place task."""
         return cls(
             num_episodes=10,
             episode_time_sec=45,
             reset_time_sec=8,
-            task_description="Захват и размещение объектов",
+            task_description="Grasping and placing objects",
             task_category="pick_place",
             difficulty_level="intermediate"
         )
     
     @classmethod
     def assembly_task(cls) -> "RecordingConfig":
-        """Конфигурация для задачи сборки."""
+        """Configuration for assembly task."""
         return cls(
             num_episodes=15,
             episode_time_sec=90,
             reset_time_sec=15,
-            task_description="Сборка деталей роботом",
+            task_description="Assembly of parts by robot",
             task_category="assembly",
             difficulty_level="advanced"
         )
     
     @classmethod
     def optimized_with_sensors(cls) -> "RecordingConfig":
-        """Оптимизированная конфигурация для работы с новыми датчиками."""
+        """Optimized configuration for working with new sensors."""
         return cls(
-            hf_username="forroot",  # ОБЯЗАТЕЛЬНО: замените на ваш username
+            hf_username="forroot",  # REQUIRED: replace with your username
             ros_master_ip="192.168.20.21",
             ros_master_port=9090,
             num_episodes=5,
             episode_time_sec=30,
             reset_time_sec=5,
-            fps=15,  # Сниженная частота для стабильности
-            task_description="Оптимизированная запись с новыми датчиками",
+            fps=15,  # Reduced frequency for stability
+            task_description="Optimized recording with new sensors",
             task_category="demo",
             difficulty_level="beginner",
             resume_existing_dataset=True,
-            image_writer_threads=2,  # Меньше потоков для стабильности
+            image_writer_threads=2,  # Fewer threads for stability
             use_videos=True
         )
 
 # =============================================================================
-# ВЫБОР КОНФИГУРАЦИИ
+# CONFIGURATION SELECTION
 # =============================================================================
 
-# Выберите одну из предустановленных конфигураций или создайте свою
-#config = RecordingConfig.optimized_with_sensors()  # Рекомендуется для новых датчиков
+# Choose one of the predefined configurations or create your own
+#config = RecordingConfig.optimized_with_sensors()  # Recommended for new sensors
 config = RecordingConfig.hit_detection()
-# config = RecordingConfig.resume_demo()  # Для продолжения записи в существующий датасет
+# config = RecordingConfig.resume_demo()  # For continuing recording in existing dataset
 # config = RecordingConfig.full_dataset()
 # config = RecordingConfig.pick_place_task()
 # config = RecordingConfig.assembly_task()
 
-# Или создайте свою конфигурацию
+# Or create your own configuration
 '''
 config = RecordingConfig(
-    hf_username="your_username",  # ОБЯЗАТЕЛЬНО: замените на ваш username
-    # hf_token получается автоматически из переменных окружения
+    hf_username="your_username",  # REQUIRED: replace with your username
+    # hf_token is obtained automatically from environment variables
     dataset_name="brewie_my_task",
     num_episodes=5,
     episode_time_sec=30,
-    task_description="Моя задача для робота Brewie",
-    resume_existing_dataset=False  # True для продолжения записи в существующий датасет
+    task_description="My task for Brewie robot",
+    resume_existing_dataset=False  # True to continue recording in existing dataset
 )
 '''

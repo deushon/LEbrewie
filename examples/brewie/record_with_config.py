@@ -1,40 +1,40 @@
 #!/usr/bin/env python
 
 """
-Пример записи датасета для робота Brewie с использованием конфигурационного файла.
+Example of recording a dataset for Brewie robot using configuration file.
 
-Этот скрипт использует record_config.py для настройки всех параметров записи.
-Измените настройки в record_config.py перед запуском этого скрипта.
+This script uses record_config.py to configure all recording parameters.
+Modify settings in record_config.py before running this script.
 
-ОСОБЕННОСТИ:
-- Автоматическое определение существующих датасетов
-- Возможность продолжения записи в существующий датасет (добавление новых эпизодов)
-- Интерактивный выбор режима записи
-- Поддержка всех стандартных функций LeRobot
-- Безопасное получение HuggingFace токена из переменных окружения
+FEATURES:
+- Automatic detection of existing datasets
+- Ability to continue recording in existing dataset (adding new episodes)
+- Interactive recording mode selection
+- Support for all standard LeRobot functions
+- Secure HuggingFace token retrieval from environment variables
 
-Использование:
-    # С переменной окружения
+Usage:
+    # With environment variable
     export HUGGINGFACE_TOKEN=your_token_here
     python examples/brewie/record_with_config.py
     
-    # С аргументом командной строки
+    # With command line argument
     python examples/brewie/record_with_config.py --hf-token your_token_here
     
-    # Интерактивный ввод (токен запросится при запуске)
+    # Interactive input (token will be requested at startup)
     python examples/brewie/record_with_config.py
 
-Режимы работы:
-1. Создание нового датасета (по умолчанию)
-2. Продолжение записи в существующий датасет (автоматически предлагается при обнаружении)
-3. Принудительное продолжение записи (через resume_existing_dataset=True в конфиге)
+Operating modes:
+1. Creating new dataset (default)
+2. Continuing recording in existing dataset (automatically offered when detected)
+3. Forced continuation of recording (via resume_existing_dataset=True in config)
 """
 
 import os
 import sys
 from pathlib import Path
 
-# Добавляем путь к модулям lerobot
+# Add path to lerobot modules
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
 
 from lerobot.datasets.lerobot_dataset import LeRobotDataset
@@ -47,35 +47,35 @@ from lerobot.utils.control_utils import init_keyboard_listener
 from lerobot.utils.utils import log_say as _log_say
 from lerobot.utils.visualization_utils import _init_rerun
 
-# Импорт конфигурации
+# Import configuration
 from record_config import config
 
 def log_say(text: str, play_sounds: bool = True, blocking: bool = False):
     """
-    Обертка для log_say, которая дублирует информацию в консоль.
+    Wrapper for log_say that duplicates information to console.
     
     Args:
-        text: Текст для вывода
-        play_sounds: Воспроизводить ли звук (передается в оригинальную log_say)
-        blocking: Блокирующий режим (передается в оригинальную log_say)
+        text: Text to output
+        play_sounds: Whether to play sound (passed to original log_say)
+        blocking: Blocking mode (passed to original log_say)
     """
-    # Выводим в консоль
+    # Output to console
     print(f"[LOG] {text}")
     
-    # Вызываем оригинальную функцию log_say
+    # Call original log_say function
     _log_say(text, play_sounds, blocking)
 
 def check_dataset_exists(dataset_repo_id: str) -> bool:
-    """Проверяет, существует ли датасет локально или на Hub."""
+    """Check if dataset exists locally or on Hub."""
     try:
-        # Попытка загрузить существующий датасет
+        # Attempt to load existing dataset
         existing_dataset = LeRobotDataset(dataset_repo_id)
         return True
     except Exception:
         return False
 
 def get_existing_dataset_info(dataset_repo_id: str) -> dict:
-    """Получает информацию о существующем датасете."""
+    """Get information about existing dataset."""
     try:
         existing_dataset = LeRobotDataset(dataset_repo_id)
         return {
@@ -92,112 +92,112 @@ def get_existing_dataset_info(dataset_repo_id: str) -> dict:
         }
 
 def validate_config():
-    """Проверка корректности конфигурации."""
+    """Check configuration correctness."""
     errors = []
     
     if config.hf_username == "your_username":
-        errors.append("Необходимо указать ваш HuggingFace username в config.hf_username")
+        errors.append("Need to specify your HuggingFace username in config.hf_username")
     
-    # Проверяем токен через новый метод
+    # Check token through new method
     try:
         hf_token = config.get_hf_token()
         if not hf_token or hf_token.strip() == "":
-            errors.append("Не удалось получить HuggingFace token")
+            errors.append("Failed to get HuggingFace token")
     except ValueError as e:
-        errors.append(f"Ошибка получения HuggingFace token: {e}")
+        errors.append(f"Error getting HuggingFace token: {e}")
     
     if not config.dataset_name:
-        errors.append("Необходимо указать название датасета в config.dataset_name")
+        errors.append("Need to specify dataset name in config.dataset_name")
     
     if config.num_episodes <= 0:
-        errors.append("Количество эпизодов должно быть больше 0")
+        errors.append("Number of episodes must be greater than 0")
     
     if config.episode_time_sec <= 0:
-        errors.append("Длительность эпизода должна быть больше 0")
+        errors.append("Episode duration must be greater than 0")
     
     if errors:
-        print("Ошибки в конфигурации:")
+        print("Configuration errors:")
         for error in errors:
             print(f"  - {error}")
-        print("\nИсправьте ошибки в файле record_config.py и запустите скрипт снова.")
-        print("\nДля установки HuggingFace token используйте:")
+        print("\nFix errors in record_config.py file and run script again.")
+        print("\nTo set HuggingFace token use:")
         print("  export HUGGINGFACE_TOKEN=your_token_here")
-        print("или передайте токен через аргумент командной строки:")
+        print("or pass token via command line argument:")
         print("  python record_with_config.py --hf-token your_token_here")
         return False
     
     return True
 
 def print_config_summary(dataset_repo_id: str, existing_dataset_info: dict = None):
-    """Вывод сводки конфигурации."""
+    """Print configuration summary."""
     print("=" * 60)
-    print("КОНФИГУРАЦИЯ ЗАПИСИ ДАТАСЕТА BREWIE")
+    print("BREWIE DATASET RECORDING CONFIGURATION")
     print("=" * 60)
-    print(f"Датасет: {dataset_repo_id}")
+    print(f"Dataset: {dataset_repo_id}")
     
     if existing_dataset_info and existing_dataset_info.get("exists"):
-        print(f"РЕЖИМ: Продолжение записи в существующий датасет")
-        print(f"Существующих эпизодов: {existing_dataset_info['num_episodes']}")
-        print(f"Будет добавлено эпизодов: {config.num_episodes}")
-        print(f"Итого эпизодов: {existing_dataset_info['num_episodes'] + config.num_episodes}")
+        print(f"MODE: Continue recording in existing dataset")
+        print(f"Existing episodes: {existing_dataset_info['num_episodes']}")
+        print(f"Episodes to add: {config.num_episodes}")
+        print(f"Total episodes: {existing_dataset_info['num_episodes'] + config.num_episodes}")
     else:
-        print(f"РЕЖИМ: Создание нового датасета")
-        print(f"Эпизодов: {config.num_episodes}")
+        print(f"MODE: Create new dataset")
+        print(f"Episodes: {config.num_episodes}")
     
-    print(f"Задача: {config.task_description}")
-    print(f"Категория: {config.task_category}")
-    print(f"Сложность: {config.difficulty_level}")
-    print(f"Длительность эпизода: {config.episode_time_sec}с")
-    print(f"Время сброса: {config.reset_time_sec}с")
-    print(f"Частота записи: {config.fps} FPS")
+    print(f"Task: {config.task_description}")
+    print(f"Category: {config.task_category}")
+    print(f"Difficulty: {config.difficulty_level}")
+    print(f"Episode duration: {config.episode_time_sec}s")
+    print(f"Reset time: {config.reset_time_sec}s")
+    print(f"Recording frequency: {config.fps} FPS")
     print(f"ROS Master: {config.ros_master_ip}:{config.ros_master_port}")
     print("=" * 60)
 
 def main():
-    """Основная функция записи датасета."""
+    """Main dataset recording function."""
     
-    # Проверка конфигурации
+    # Check configuration
     if not validate_config():
         return
     
-    # Создание ID датасета
+    # Create dataset ID
     dataset_repo_id = f"{config.hf_username}/{config.dataset_name}"
     
-    # Проверка существования датасета
+    # Check dataset existence
     existing_dataset_info = get_existing_dataset_info(dataset_repo_id)
     
-    # Автоматическое определение режима resume, если не задан явно
+    # Automatic resume mode detection if not explicitly set
     should_resume = config.resume_existing_dataset
     if existing_dataset_info.get("exists") and not config.resume_existing_dataset:
-        print(f"\nОбнаружен существующий датасет: {dataset_repo_id}")
-        print(f"Существующих эпизодов: {existing_dataset_info['num_episodes']}")
+        print(f"\nFound existing dataset: {dataset_repo_id}")
+        print(f"Existing episodes: {existing_dataset_info['num_episodes']}")
         print(f"FPS: {existing_dataset_info['fps']}")
-        print(f"Тип робота: {existing_dataset_info['robot_type']}")
+        print(f"Robot type: {existing_dataset_info['robot_type']}")
         
-        response = input("\nПродолжить запись в существующий датасет? (y/N): ").strip().lower()
-        if response in ['y', 'yes', 'да']:
+        response = input("\nContinue recording in existing dataset? (y/N): ").strip().lower()
+        if response in ['y', 'yes']:
             should_resume = True
-            print("Режим: Продолжение записи в существующий датасет")
+            print("Mode: Continue recording in existing dataset")
         else:
-            print("Режим: Создание нового датасета (существующий будет перезаписан)")
+            print("Mode: Create new dataset (existing will be overwritten)")
     
-    # Вывод сводки конфигурации
+    # Print configuration summary
     if should_resume and existing_dataset_info.get("exists"):
         print_config_summary(dataset_repo_id, existing_dataset_info)
     else:
         print_config_summary(dataset_repo_id)
     
-    # Подтверждение запуска
-    response = input("Продолжить запись с этими настройками? (y/N): ").strip().lower()
-    if response not in ['y', 'yes', 'да']:
-        print("Запись отменена.")
+    # Confirmation to start
+    response = input("Continue recording with these settings? (y/N): ").strip().lower()
+    if response not in ['y', 'yes']:
+        print("Recording cancelled.")
         return
     
     # =============================================================================
-    # СОЗДАНИЕ КОНФИГУРАЦИЙ
+    # CREATE CONFIGURATIONS
     # =============================================================================
     
-    # Конфигурация робота
+    # Robot configuration
     robot_config = BrewieConfig(
         master_ip=config.ros_master_ip,
         master_port=config.ros_master_port,
@@ -205,44 +205,44 @@ def main():
         max_relative_target=config.max_relative_target,
     )
     
-    # Конфигурация телеоператора
+    # Teleoperator configuration
     keyboard_config = KeyboardTeleopConfig()
     
     # =============================================================================
-    # ИНИЦИАЛИЗАЦИЯ УСТРОЙСТВ
+    # DEVICE INITIALIZATION
     # =============================================================================
     
     robot = BrewieBase(robot_config)
     keyboard = KeyboardTeleop(keyboard_config)
     
     # =============================================================================
-    # НАСТРОЙКА ДАТАСЕТА
+    # DATASET SETUP
     # =============================================================================
     
-    # Конфигурация признаков датасета
+    # Dataset features configuration
     #action_features = hw_to_dataset_features(robot.action_features, "action") 
     obs_features = hw_to_dataset_features(robot.observation_features, "observation")
     dataset_features = {**obs_features}
     #**action_features,
     
-    # Создание или загрузка датасета
+    # Create or load dataset
     if should_resume and existing_dataset_info.get("exists"):
-        log_say("Загрузка существующего датасета для продолжения записи...")
+        log_say("Loading existing dataset to continue recording...")
         dataset = LeRobotDataset(
             repo_id=dataset_repo_id,
-            batch_encoding_size=1,  # Используем значение по умолчанию
+            batch_encoding_size=1,  # Use default value
         )
         
-        # Запуск image writer для существующего датасета
+        # Start image writer for existing dataset
         if hasattr(robot, "cameras") and len(robot.cameras) > 0:
             dataset.start_image_writer(
-                num_processes=0,  # Используем значение по умолчанию
+                num_processes=0,  # Use default value
                 num_threads=config.image_writer_threads,
             )
         
-        log_say(f"Датасет загружен. Существующих эпизодов: {dataset.num_episodes}")
+        log_say(f"Dataset loaded. Existing episodes: {dataset.num_episodes}")
     else:
-        log_say("Создание нового датасета...")
+        log_say("Creating new dataset...")
         dataset = LeRobotDataset.create(
             repo_id=dataset_repo_id,
             fps=config.fps,
@@ -253,70 +253,70 @@ def main():
         )
     
     # =============================================================================
-    # ПОДКЛЮЧЕНИЕ К УСТРОЙСТВАМ
+    # DEVICE CONNECTION
     # =============================================================================
     
-    log_say("Подключение к роботу Brewie...")
+    log_say("Connecting to Brewie robot...")
     try:
         robot.connect()
     except Exception as e:
-        log_say(f"Ошибка подключения к роботу: {e}")
+        log_say(f"Error connecting to robot: {e}")
         return
     
-    log_say("Подключение к телеоператору...")
+    log_say("Connecting to teleoperator...")
     try:
         keyboard.connect()
     except Exception as e:
-        log_say(f"Ошибка подключения к телеоператору: {e}")
+        log_say(f"Error connecting to teleoperator: {e}")
         robot.disconnect()
         return
     
-    # Инициализация визуализации
+    # Initialize visualization
     _init_rerun(session_name=config.session_name)
     
-    # Инициализация слушателя клавиатуры
+    # Initialize keyboard listener
     listener, events = init_keyboard_listener()
     
-    # Проверка подключений
+    # Check connections
     if not robot.is_connected:
-        log_say("ОШИБКА: Робот Brewie не подключен!")
+        log_say("ERROR: Brewie robot not connected!")
         keyboard.disconnect()
         listener.stop()
         return
         
     if not keyboard.is_connected:
-        log_say("ОШИБКА: Телеоператор не подключен!")
+        log_say("ERROR: Teleoperator not connected!")
         robot.disconnect()
         listener.stop()
         return
     
-    log_say("Все устройства подключены успешно!")
-    log_say("Управление:")
-    log_say("  - ENTER: Начать/продолжить запись эпизода")
-    log_say("  - ESC: Остановить запись")
-    log_say("  - R: Перезаписать текущий эпизод")
+    log_say("All devices connected successfully!")
+    log_say("Controls:")
+    log_say("  - ENTER: Start/continue episode recording")
+    log_say("  - ESC: Stop recording")
+    log_say("  - R: Rewrite current episode")
     
     # =============================================================================
-    # ЦИКЛ ЗАПИСИ ЭПИЗОДОВ
+    # EPISODE RECORDING LOOP
     # =============================================================================
     
-    # Определяем начальный номер эпизода
+    # Determine starting episode number
     start_episode = dataset.num_episodes if should_resume else 0
     total_episodes_to_record = config.num_episodes
     recorded_episodes = 0
     
-    log_say(f"Начало записи. Будет записано {total_episodes_to_record} эпизодов")
+    log_say(f"Starting recording. Will record {total_episodes_to_record} episodes")
     if should_resume:
-        log_say(f"Продолжение с эпизода {start_episode}")
+        log_say(f"Continuing from episode {start_episode}")
     
     try:
         while recorded_episodes < total_episodes_to_record and not events["stop_recording"]:
             current_episode_num = start_episode + recorded_episodes + 1
-            log_say(f"Запись эпизода {current_episode_num} ({recorded_episodes + 1}/{total_episodes_to_record})")
-            log_say("Нажмите ENTER для начала записи эпизода...")
+            log_say(f"Recording episode {current_episode_num} ({recorded_episodes + 1}/{total_episodes_to_record})")
+            log_say("Press ENTER to start episode recording...")
             input()
             
-            # Запуск цикла записи
+            # Start recording loop
             record_loop(
                 robot=robot,
                 events=events,
@@ -328,72 +328,72 @@ def main():
                 display_data=config.display_data,
             )
             
-            # Логика сброса окружения
+            # Environment reset logic
             if not events["stop_recording"] and (
                 (recorded_episodes < total_episodes_to_record - 1) or events["rerecord_episode"]
             ):
-                log_say("Сброс окружения...")
+                log_say("Resetting environment...")
                 record_loop(
                     robot=robot,
                     events=events,
                     fps=config.fps,
                     teleop=keyboard,
                     control_time_s=config.reset_time_sec,
-                    single_task="Сброс позиции робота",
+                    single_task="Robot position reset",
                     display_data=config.display_data,
                 )
             
-            # Обработка перезаписи эпизода
+            # Handle episode rewrite
             if events["rerecord_episode"]:
-                log_say("Перезапись эпизода...")
+                log_say("Rewriting episode...")
                 events["rerecord_episode"] = False
                 events["exit_early"] = False
                 dataset.clear_episode_buffer()
                 continue
             
-            # Сохранение эпизода
+            # Save episode
             dataset.save_episode()
             recorded_episodes += 1
             current_episode_num = start_episode + recorded_episodes
-            log_say(f"Эпизод {current_episode_num} сохранен")
+            log_say(f"Episode {current_episode_num} saved")
             
     except KeyboardInterrupt:
-        log_say("Запись прервана пользователем")
+        log_say("Recording interrupted by user")
     except Exception as e:
-        log_say(f"Ошибка во время записи: {e}")
+        log_say(f"Error during recording: {e}")
     
     # =============================================================================
-    # ЗАВЕРШЕНИЕ И ОТПРАВКА НА HUB
+    # COMPLETION AND HUB UPLOAD
     # =============================================================================
     
     total_episodes_in_dataset = dataset.num_episodes
     if should_resume:
-        log_say(f"Запись завершена! Добавлено {recorded_episodes} новых эпизодов")
-        log_say(f"Всего эпизодов в датасете: {total_episodes_in_dataset}")
+        log_say(f"Recording completed! Added {recorded_episodes} new episodes")
+        log_say(f"Total episodes in dataset: {total_episodes_in_dataset}")
     else:
-        log_say(f"Запись завершена! Сохранено {recorded_episodes} эпизодов")
+        log_say(f"Recording completed! Saved {recorded_episodes} episodes")
     
     if recorded_episodes > 0 and config.auto_push_to_hub:
-        log_say("Отправка датасета на HuggingFace Hub...")
+        log_say("Uploading dataset to HuggingFace Hub...")
         try:
             dataset.push_to_hub()
-            log_say(f"Датасет успешно отправлен на: https://huggingface.co/datasets/{dataset_repo_id}")
+            log_say(f"Dataset successfully uploaded to: https://huggingface.co/datasets/{dataset_repo_id}")
         except Exception as e:
-            log_say(f"Ошибка при отправке на Hub: {e}")
-            log_say("Датасет сохранен локально")
+            log_say(f"Error uploading to Hub: {e}")
+            log_say("Dataset saved locally")
     elif recorded_episodes > 0:
-        log_say("Датасет сохранен локально (auto_push_to_hub = False)")
+        log_say("Dataset saved locally (auto_push_to_hub = False)")
     
-    # Отключение устройств
-    log_say("Отключение устройств...")
+    # Disconnect devices
+    log_say("Disconnecting devices...")
     try:
         robot.disconnect()
         keyboard.disconnect()
         listener.stop()
     except Exception as e:
-        log_say(f"Ошибка при отключении: {e}")
+        log_say(f"Error during disconnection: {e}")
     
-    log_say("Запись датасета завершена!")
+    log_say("Dataset recording completed!")
 
 if __name__ == "__main__":
     main()
