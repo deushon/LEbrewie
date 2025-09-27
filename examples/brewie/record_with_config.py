@@ -31,6 +31,7 @@ Operating modes:
 """
 
 import os
+import shutil
 import sys
 from pathlib import Path
 
@@ -243,14 +244,30 @@ def main():
         log_say(f"Dataset loaded. Existing episodes: {dataset.num_episodes}")
     else:
         log_say("Creating new dataset...")
-        dataset = LeRobotDataset.create(
-            repo_id=dataset_repo_id,
-            fps=config.fps,
-            features=dataset_features,
-            robot_type=robot.name,
-            use_videos=config.use_videos,
-            image_writer_threads=config.image_writer_threads,
-        )
+        try:
+            dataset = LeRobotDataset.create(
+                repo_id=dataset_repo_id,
+                fps=config.fps,
+                features=dataset_features,
+                robot_type=robot.name,
+                use_videos=config.use_videos,
+                image_writer_threads=config.image_writer_threads,
+            )
+        except FileExistsError:
+            log_say("Dataset folder already exists. Removing existing folder and creating new dataset...")
+            # Remove existing dataset folder
+            dataset_root = Path.home() / ".cache" / "huggingface" / "lerobot" / dataset_repo_id
+            if dataset_root.exists():
+                shutil.rmtree(dataset_root)
+            # Create new dataset
+            dataset = LeRobotDataset.create(
+                repo_id=dataset_repo_id,
+                fps=config.fps,
+                features=dataset_features,
+                robot_type=robot.name,
+                use_videos=config.use_videos,
+                image_writer_threads=config.image_writer_threads,
+            )
     
     # =============================================================================
     # DEVICE CONNECTION

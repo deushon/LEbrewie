@@ -184,7 +184,7 @@ class RecordingConfig:
         Get HuggingFace token for this configuration.
         
         Returns:
-            str: HuggingFace token
+            str: HuggingFace token 
         """
         return get_hf_token()
     
@@ -231,12 +231,12 @@ class RecordingConfig:
     def hit_detection(cls) -> "RecordingConfig":
         return cls(
             hf_username="forroot",  # REQUIRED: replace with your username
-            dataset_name ="hit_detection",
-            ros_master_ip="192.168.20.21",
+            dataset_name ="TERST2",
+            ros_master_ip="192.168.20.23",
             ros_master_port=9090,
             num_episodes=2,
             fps=20, 
-            episode_time_sec=20,
+            episode_time_sec=2,
             reset_time_sec=3,
             task_description="Testing observation of hit data FIRE button True = human hit verification",
             task_category="hit",
