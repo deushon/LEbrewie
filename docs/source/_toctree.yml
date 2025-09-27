@@ -35,6 +35,8 @@
     title: Koch v1.1
   - local: lekiwi
     title: LeKiwi
+  - local: Brewie
+    title: Brewie
   title: "Robots"
 - sections:
   - local: notebooks
